@@ -1,16 +1,37 @@
-from fastapi import FastAPI, BackgroundTasks
-from src.ai_convertor.routers import router as ai_convertor_router
-from src.notion.routers import router as notion_router
-from src.telegram_bot.routers import router as telegram_bot_router
-from src.telegram_bot.services import handle_telegram_update, set_webhook
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from .services import get_transcript, generate_exercise_with_transcript
 import json
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], 
+    allow_credentials=True,
+    allow_methods=["*"],  
+    allow_headers=["*"], 
+)
+
+class TranscriptionRequest(BaseModel):
+    url: str
+
+class ExerciseRequest(BaseModel):
+    url: str
+    current_time: int
+    previous_answer: str
 
 @app.get("/")
 async def read_root():
     return {"message": "Hello World"}
 
-@app.post("/youtube-transcription")
-async def youtube_transcription(url: str):
-    return {"message": "Hello World"}
+@app.post("/generate_transcription")
+async def generate_transcription(request: TranscriptionRequest):
+    transcript = await get_transcript(request.url)
+    return {"transcript": transcript}
+
+@app.post("/generate_exercise")
+async def generate_exercise(request: ExerciseRequest):
+    exercise = await generate_exercise_with_transcript(request.url, request.current_time, request.previous_answer)
+    return {"exercise": exercise}

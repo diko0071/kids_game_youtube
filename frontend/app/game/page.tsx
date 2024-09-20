@@ -3,8 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getYoutubeTranscriptionAndInfo } from '../services/transcription-extractor'
-import { generateExercise } from '../services/ai-service'
+import { getYoutubeTranscriptionAndInfo, generateExercise } from '../api/api'
 
 declare global {
   interface Window {
@@ -35,7 +34,7 @@ namespace YT {
 
 export default function InteractivePlayer() {
   const [player, setPlayer] = useState<YT.Player | null>(null)
-  const [videoId, setVideoId] = useState('dQw4w9WgXcQ')
+  const [videoId, setVideoId] = useState('ZfBDS2MSTWI')
   const [videoUrl, setVideoUrl] = useState('')
   const [currentTime, setCurrentTime] = useState(0)
   const [isExercising, setIsExercising] = useState(false)
@@ -46,6 +45,7 @@ export default function InteractivePlayer() {
   const [feedback, setFeedback] = useState('')
   const [transcript, setTranscript] = useState('')
   const [videoInfo, setVideoInfo] = useState<any>(null)
+  const previousAnswerRef = useRef<string>('Nothing')
 
   const playerRef = useRef<YT.Player | null>(null)
 
@@ -56,7 +56,7 @@ export default function InteractivePlayer() {
       const firstScriptTag = document.getElementsByTagName('script')[0]
       firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
 
-      window.onYouTubeIframeAPIReady = initializePlayer // {change 1}
+      window.onYouTubeIframeAPIReady = initializePlayer
     } else if (window.YT && window.YT.Player) {
       initializePlayer()
     }
@@ -87,16 +87,22 @@ export default function InteractivePlayer() {
   const fetchTranscriptAndInfo = async () => {
     try {
       const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      const { transcript, videoInfo } = await getYoutubeTranscriptionAndInfo(videoUrl)
-      setTranscript(transcript)
-      setVideoInfo(videoInfo)
+      const response = await getYoutubeTranscriptionAndInfo(videoUrl);
+      
+      if (!response || !response.transcript) {
+        throw new Error('Invalid response from API');
+      }
+
+      const { transcript, videoInfo } = response;
+      setTranscript(transcript);
+      setVideoInfo(videoInfo);
     } catch (error) {
-      console.error('Error fetching transcript and info:', error)
+      console.error('Error fetching transcript and info:', error);
     }
   }
 
-
   const handleExercise = async () => {
+    console.log('handleExercise called'); // Логирование
     if (playerRef.current && videoInfo) {
       const currentTime = Math.floor(playerRef.current.getCurrentTime())
       setCurrentTime(currentTime)
@@ -104,10 +110,16 @@ export default function InteractivePlayer() {
       playerRef.current.pauseVideo()
 
       try {
-        const { exercise, options, rightAnswer } = await generateExercise(
-          videoInfo.title,
+        console.log('Generating exercise with:', {
           currentTime,
-          transcript
+          transcript,
+          previousAnswer: previousAnswerRef.current
+        }); // Логирование
+
+        const { exercise, options, rightAnswer } = await generateExercise(
+          currentTime,
+          transcript,
+          previousAnswerRef.current // передаем предыдущий ответ
         )
         setExercise(exercise)
         setOptions(options)
@@ -125,6 +137,7 @@ export default function InteractivePlayer() {
     } else {
       setFeedback(`Incorrect. The correct answer is ${rightAnswer}.`)
     }
+    previousAnswerRef.current = userAnswer || 'Nothing' // сохраняем текущий ответ как предыдущий
   }
 
   const resetExercise = () => {
