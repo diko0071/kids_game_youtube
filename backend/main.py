@@ -18,9 +18,9 @@ class TranscriptionRequest(BaseModel):
     url: str
 
 class ExerciseRequest(BaseModel):
-    url: str
-    current_time: int
+    current_time: str
     previous_answer: str
+    transcript: str
 
 @app.get("/")
 async def read_root():
@@ -33,5 +33,12 @@ async def generate_transcription(request: TranscriptionRequest):
 
 @app.post("/generate_exercise")
 async def generate_exercise(request: ExerciseRequest):
-    exercise = await generate_exercise_with_transcript(request.url, request.current_time, request.previous_answer)
-    return {"exercise": exercise}
+    exercise = await generate_exercise_with_transcript(
+        request.current_time, request.previous_answer, request.transcript
+    )
+    json_exercise = json.loads(exercise)
+    return {
+        "question": json_exercise["question"],
+        "options": json_exercise["options"],
+        "correct_option": json_exercise["correct_option"]
+    }

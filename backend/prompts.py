@@ -15,5 +15,7 @@ The output should be in json format:
 }
 
 NEVER repeat the same exercise.
+
+It MUST be JSON without additional text. NEVER put any text or 
 """
 

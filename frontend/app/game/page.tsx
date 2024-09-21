@@ -3,7 +3,11 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getYoutubeTranscriptionAndInfo, generateExercise } from '../api/api'
+import { getYoutubeTranscription, generateExercise } from '../api/api' //{change 1}
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" // {change 1}
+import Confetti from 'react-confetti';
+import SingleQuizCard from '../components_game/quiz_card';
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog" // {change 1}
 
 declare global {
   interface Window {
@@ -42,10 +46,14 @@ export default function InteractivePlayer() {
   const [options, setOptions] = useState<string[]>([])
   const [rightAnswer, setRightAnswer] = useState('')
   const [userAnswer, setUserAnswer] = useState('')
+  const [showConfetti, setShowConfetti] = useState(false);
   const [feedback, setFeedback] = useState('')
   const [transcript, setTranscript] = useState('')
   const [videoInfo, setVideoInfo] = useState<any>(null)
-  const previousAnswerRef = useRef<string>('Nothing')
+  const [previousResponses, setPreviousResponses] = useState<Array<{question: string, answer: string}>>([]);
+  const [question, setQuestion] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false); // {change 2}
 
   const playerRef = useRef<YT.Player | null>(null)
 
@@ -87,58 +95,83 @@ export default function InteractivePlayer() {
   const fetchTranscriptAndInfo = async () => {
     try {
       const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      const response = await getYoutubeTranscriptionAndInfo(videoUrl);
+      const response = await getYoutubeTranscription(videoUrl);
       
-      if (!response || !response.transcript) {
+      if (!response) {
         throw new Error('Invalid response from API');
       }
-
-      const { transcript, videoInfo } = response;
-      setTranscript(transcript);
-      setVideoInfo(videoInfo);
+      
+      if (typeof response === 'object' && 'transcript' in response) {
+        setTranscript(response.transcript);
+      } else if (typeof response === 'string') {
+        setTranscript(response);
+      } else {
+        throw new Error('Unexpected response format from API');
+      }
     } catch (error) {
       console.error('Error fetching transcript and info:', error);
     }
   }
 
   const handleExercise = async () => {
-    console.log('handleExercise called'); // Логирование
-    if (playerRef.current && videoInfo) {
-      const currentTime = Math.floor(playerRef.current.getCurrentTime())
-      setCurrentTime(currentTime)
-      setIsExercising(true)
-      playerRef.current.pauseVideo()
-
-      try {
-        console.log('Generating exercise with:', {
-          currentTime,
-          transcript,
-          previousAnswer: previousAnswerRef.current
-        }); // Логирование
-
-        const { exercise, options, rightAnswer } = await generateExercise(
-          currentTime,
-          transcript,
-          previousAnswerRef.current // передаем предыдущий ответ
-        )
-        setExercise(exercise)
-        setOptions(options)
-        setRightAnswer(rightAnswer)
-      } catch (error) {
-        console.error('Error generating exercise:', error)
-        setFeedback('Failed to generate exercise. Please try again.')
+    if (!playerRef.current) return;
+  
+    const currentTime = Math.floor(playerRef.current.getCurrentTime());
+    setCurrentTime(currentTime);
+    setIsExercising(true);
+    setIsDialogOpen(true);
+    setIsGenerating(true);
+    playerRef.current.pauseVideo();
+  
+    try {
+      console.log('previousResponses', previousResponses)
+      const response = await generateExercise(
+        currentTime.toString(),
+        transcript,
+        previousResponses.map(response => `${response.question} - ${response.answer}`).join(', ')
+      );
+  
+      if (!response || typeof response !== 'object') {
+        throw new Error('Invalid response from generateExercise');
       }
+  
+      const { question, options, correct_option } = response;
+      if (!question || !options || !correct_option) {
+        throw new Error('Incomplete response from generateExercise');
+      }
+  
+      setQuestion(question);
+      setOptions(options);
+      setRightAnswer(correct_option);
+      setExercise(question); 
+      setFeedback(''); 
+      setUserAnswer(''); 
+    } catch (error) {
+      console.error('Error generating exercise:', error);
+      setFeedback('Failed to generate exercise. Please try again.');
+      setIsExercising(false);
+      setExercise(''); 
+      setOptions([]); 
+      setRightAnswer(''); 
+    } finally {
+      setIsGenerating(false);
     }
-  }
+  };
 
-  const checkAnswer = () => {
-    if (userAnswer === rightAnswer) {
-      setFeedback('Correct!')
+  const checkAnswer = (selectedOption: string) => {
+    setUserAnswer(selectedOption);
+    if (selectedOption === rightAnswer) {
+      setFeedback('Correct!');
+      setShowConfetti(true);
+      setTimeout(() => {
+        setShowConfetti(false);
+        resetExercise();
+      }, 3000); 
     } else {
-      setFeedback(`Incorrect. The correct answer is ${rightAnswer}.`)
+      setFeedback(`Incorrect. The correct answer is ${rightAnswer}.`);
     }
-    previousAnswerRef.current = userAnswer || 'Nothing' // сохраняем текущий ответ как предыдущий
-  }
+    setPreviousResponses([...previousResponses, { question: question, answer: selectedOption }]);
+  };
 
   const resetExercise = () => {
     setIsExercising(false)
@@ -147,6 +180,7 @@ export default function InteractivePlayer() {
     setExercise('')
     setOptions([])
     setRightAnswer('')
+    setIsDialogOpen(false); // {change 2}
     if (playerRef.current) {
       playerRef.current.playVideo()
     }
@@ -182,30 +216,27 @@ export default function InteractivePlayer() {
         <div id="youtube-player"></div>
       </div>
       <div className="space-y-4">
-        <Button onClick={handleExercise} disabled={isExercising}>
+        <Button onClick={handleExercise}>
           Generate Exercise
         </Button>
-        {isExercising && (
-          <div className="space-y-2">
-            <p className="text-lg font-semibold">{exercise}</p>
-            {options.map((option, index) => (
-              <Button
-                key={index}
-                onClick={() => setUserAnswer(option)}
-                variant={userAnswer === option ? "default" : "outline"}
-                className="w-full"
-              >
-                {option}
-              </Button>
-            ))}
-            <Button onClick={checkAnswer} disabled={!userAnswer}>Check Answer</Button>
-            <Button onClick={resetExercise} variant="outline">
-              Resume Video
-            </Button>
-            {feedback && <p className="text-lg font-semibold">{feedback}</p>}
-          </div>
-        )}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            {isExercising && (
+              <SingleQuizCard
+                question={question}
+                options={options}
+                correctAnswer={rightAnswer}
+                onAnswerSelected={(selectedOption) => {
+                  checkAnswer(selectedOption);
+                }}
+                onReset={resetExercise}
+                isGenerating={isGenerating}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
+      {showConfetti && <Confetti />}
     </div>
   )
 }
