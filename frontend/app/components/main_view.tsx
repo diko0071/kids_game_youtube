@@ -11,6 +11,7 @@ import { Play, Pause, Volume2, Edit, Settings, Video } from "lucide-react"
 import Game from './game'
 import RussianAlphabetGame from './russian_alphabet_game'
 import ContentView from './content_view'
+import { DialogGame, DialogGameContent, DialogGameTitle, DialogGameDescription, DialogGameTrigger, DialogGameFooter } from '@/components/ui/dialog_game'
 
 declare global {
   interface Window {
@@ -271,7 +272,7 @@ export default function MainView() {
           </div>
         </div>
       </div>
-      <Dialog 
+      <DialogGame 
         open={isDialogOpen} 
         onOpenChange={(open) => {
           console.log(`Dialog open state changed to: ${open}`);
@@ -281,13 +282,13 @@ export default function MainView() {
           setIsDialogOpen(open);
         }}
       >
-        <DialogContent className="sm:max-w-[600px] flex flex-col items-center">
-          <DialogTitle>Mini-Game {Math.min(currentGameIndex + 1, numExercises)}/{numExercises}</DialogTitle>
-          <DialogDescription>Complete the game to continue watching the video.</DialogDescription>
+        <DialogGameContent className="sm:max-w-[600px] flex flex-col items-center">
+          <DialogGameTitle>Mini-Game {Math.min(currentGameIndex + 1, numExercises)}/{numExercises}</DialogGameTitle>
+          <DialogGameDescription>Complete the game to continue watching the video.</DialogGameDescription>
           {isExercising && currentGameIndex < numExercises && games[currentGameIndex]}
           {isExercising && currentGameIndex >= numExercises && <p>All games completed!</p>}
-        </DialogContent>
-      </Dialog>
+        </DialogGameContent>
+      </DialogGame>
     </div>
   )
 }
