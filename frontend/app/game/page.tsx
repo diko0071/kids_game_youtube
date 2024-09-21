@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { getYoutubeTranscription, generateExercise } from '../api/api' //{change 1}
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" // {change 1}
 import Confetti from 'react-confetti';
-import SingleQuizCard from '../components_game/quiz_card';
+import SingleQuizCard from '../components/quiz_card';
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog" // {change 1}
 
 declare global {

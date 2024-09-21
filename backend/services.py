@@ -32,5 +32,4 @@ async def get_transcript(url: str):
 
 async def generate_exercise_with_transcript(current_time: int, previous_exercises: str, transcript: str):
     exercise = await generate_exercise(transcript, current_time, previous_exercises)
-    print(exercise)
     return exercise
