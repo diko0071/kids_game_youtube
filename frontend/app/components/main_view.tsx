@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import ExerciseSettings from './settings_view'
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Play, Pause, Volume2, Edit, Settings } from "lucide-react"
-import { getYoutubeTranscription, generateExercise } from '../api/api'
 import SingleQuizCard from './quiz_card'
 import Confetti from 'react-confetti'
+import Game from './game'
+import RussianAlphabetGame from './russian_alphabet_game'
 
 declare global {
   interface Window {
@@ -27,7 +28,8 @@ export default function MainView() {
   const playerRef = useRef<any>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [numExercises, setNumExercises] = useState(5)
-  const [frequency, setFrequency] = useState(3)
+  const [completedGames, setCompletedGames] = useState(0)
+  const [frequency, setFrequency] = useState(1)
   const [transcript, setTranscript] = useState('')
   const [isExercising, setIsExercising] = useState(false)
   const [exercise, setExercise] = useState('')
@@ -42,6 +44,8 @@ export default function MainView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [lastExerciseTime, setLastExerciseTime] = useState<number>(0)
   const [isCheckingExerciseTime, setIsCheckingExerciseTime] = useState<boolean>(false)
+  const [currentGameIndex, setCurrentGameIndex] = useState(0)
+  const [games, setGames] = useState<JSX.Element[]>([])
 
   const checkExerciseTime = () => {
     if (!playerRef.current || isGenerating || isExercising) return
@@ -68,103 +72,48 @@ export default function MainView() {
     }
   }, [isPlaying, frequency, isGenerating, isExercising])
 
-  const fetchTranscriptAndInfo = async () => {
-    try {
-      const videoUrl = `https://www.youtube.com/watch?v=${currentVideoId}`
-      const response = await getYoutubeTranscription(videoUrl)
-      
-      if (!response) {
-        throw new Error('Invalid response from API')
-      }
-      
-      if (typeof response === 'object' && 'transcript' in response) {
-        setTranscript(response.transcript)
-      } else if (typeof response === 'string') {
-        setTranscript(response)
-      } else {
-        throw new Error('Unexpected response format from API')
-      }
-    } catch (error) {
-      console.error('Error fetching transcript and info:', error)
+  const generateRandomGames = () => {
+    const gameComponents = [
+      () => <Game key="game" onComplete={handleGameComplete} />,
+      () => <RussianAlphabetGame key="alphabet" onComplete={handleGameComplete} />,
+    ]
+    
+    const shuffled = [...Array(numExercises)].map(() => 
+      gameComponents[Math.floor(Math.random() * gameComponents.length)]
+    )
+    setGames(shuffled.map((Component, index) => 
+      <Component key={index} />
+    ))
+  }
+
+
+  const handleGameComplete = () => {
+    setCompletedGames(prev => prev + 1)
+    if (completedGames + 1 >= numExercises) {
+      resetExercise()
+    } else {
+      setCurrentGameIndex(prev => prev + 1)
     }
   }
 
-  const handleExercise = async () => {
+  const handleExercise = () => {
     if (!playerRef.current) return
-  
-    const currentTime = Math.floor(playerRef.current.getCurrentTime())
-    setIsGenerating(true)
-  
-    try {
-      const response = await generateExercise(
-        currentTime.toString(),
-        transcript,
-        previousResponses.map(response => `${response.question} - ${response.answer}`).join(', ')
-      )
-      console.log('Previous responses:', previousResponses);
-      if (!response || typeof response !== 'object') {
-        throw new Error('Invalid response from generateExercise')
-      }
-  
-      const { question, options, correct_option } = response
-      if (!question || !options || !correct_option) {
-        throw new Error('Incomplete response from generateExercise')
-      }
-  
-      playerRef.current.pauseVideo()
-  
-      setQuestion(question)
-      setOptions(options)
-      setRightAnswer(correct_option)
-      setExercise(question)
-      setFeedback('')
-      setUserAnswer('')
-      setIsExercising(true)
-      setIsDialogOpen(true)
-    } catch (error) {
-      console.error('Error generating exercise:', error)
-      setFeedback('Failed to generate exercise. Please try again.')
-      setIsExercising(false)
-      setExercise('')
-      setOptions([])
-      setRightAnswer('')
-    } finally {
-      setIsGenerating(false)
-    }
+    playerRef.current.pauseVideo()
+    setIsExercising(true)
+    setIsDialogOpen(true)
+    generateRandomGames()
+    setCurrentGameIndex(0)
+    setCompletedGames(0)
   }
 
   const resetExercise = () => {
     setIsExercising(false)
-    setUserAnswer('')
-    setFeedback('')
-    setExercise('')
-    setOptions([])
-    setRightAnswer('')
     setIsDialogOpen(false)
+    setCurrentGameIndex(0)
+    setCompletedGames(0)
     if (playerRef.current) {
       playerRef.current.playVideo()
     }
-  }
-
-  useEffect(() => {
-    if (currentVideoId) {
-      fetchTranscriptAndInfo()
-    }
-  }, [currentVideoId])
-
-  const checkAnswer = (selectedOption: string) => {
-    setUserAnswer(selectedOption)
-    if (selectedOption === rightAnswer) {
-      setFeedback('Correct!')
-      setShowConfetti(true)
-      setTimeout(() => {
-        setShowConfetti(false)
-        resetExercise()
-      }, 3000)
-    } else {
-      setFeedback(`Incorrect. The correct answer is ${rightAnswer}.`)
-    }
-    setPreviousResponses([...previousResponses, { question: question, answer: selectedOption }])
   }
 
   const extractVideoId = (url: string): string | null => {
@@ -319,18 +268,9 @@ export default function MainView() {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-[425px]">
-              <DialogTitle>Quiz Question</DialogTitle>
-              <DialogDescription></DialogDescription>
-              {isExercising && (
-                <SingleQuizCard
-                  question={question}
-                  options={options}
-                  correctAnswer={rightAnswer}
-                  onAnswerSelected={checkAnswer}
-                  onReset={resetExercise}
-                  isGenerating={isGenerating}
-                />
-              )}
+              <DialogTitle>Mini-Game {currentGameIndex + 1}/{numExercises}</DialogTitle>
+              <DialogDescription>Complete the game to continue watching the video.</DialogDescription>
+              {isExercising && games[currentGameIndex]}
             </DialogContent>
           </Dialog>
         </div>
