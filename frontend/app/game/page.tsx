@@ -3,18 +3,16 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getYoutubeTranscription, generateExercise } from '../api/api' //{change 1}
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" // {change 1}
+import { getYoutubeTranscription, generateExercise } from '../api/api'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" 
 import Confetti from 'react-confetti';
 import SingleQuizCard from '../components/quiz_card';
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog" // {change 1}
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 
 declare global {
   interface Window {
     onYouTubeIframeAPIReady: () => void;
-    YT: {
-      Player: new (elementId: string, options: YT.PlayerOptions) => YT.Player;
-    };
+    YT: any;
   }
 }
 
@@ -86,7 +84,7 @@ export default function InteractivePlayer() {
       width: '640',
       videoId: videoId,
       events: {
-        onReady: (event) => setPlayer(event.target),
+        onReady: (event: any) => setPlayer(event.target),
       },
     })
     playerRef.current = newPlayer
