@@ -35,7 +35,7 @@ export default function ExerciseSettings({ numExercises = 5, frequency = 3, onSa
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="numExercises">Number of Exercises (during the video)</Label>
+            <Label htmlFor="numExercises">Number of Exercises (inside the quiz)</Label>
             <Input
               id="numExercises"
               type="number"

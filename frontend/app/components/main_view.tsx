@@ -260,7 +260,7 @@ export default function MainView() {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogTitle>Content URLs</DialogTitle>
-                  <DialogDescription>Enter a video URL or a playlist URL</DialogDescription>
+                  <DialogDescription>Enter a video URL</DialogDescription>
                   <ContentView 
                     onClose={() => setShowContentView(false)} 
                     content={content} 
@@ -283,10 +283,10 @@ export default function MainView() {
         }}
       >
         <DialogGameContent className="sm:max-w-[600px] flex flex-col items-center">
-          <DialogGameTitle>Mini-Game {Math.min(currentGameIndex + 1, numExercises)}/{numExercises}</DialogGameTitle>
-          <DialogGameDescription>Complete the game to continue watching the video.</DialogGameDescription>
+          <DialogGameTitle>Мини-игра {Math.min(currentGameIndex + 1, numExercises)}/{numExercises}</DialogGameTitle>
+          <DialogGameDescription>Завершите мини-игру, чтобы продолжить просмотр видео.</DialogGameDescription>
           {isExercising && currentGameIndex < numExercises && games[currentGameIndex]}
-          {isExercising && currentGameIndex >= numExercises && <p>All games completed!</p>}
+          {isExercising && currentGameIndex >= numExercises && <p>Все мини-игры завершены!</p>}
         </DialogGameContent>
       </DialogGame>
     </div>

@@ -118,11 +118,8 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
   }
 
   return (
-    <div className="flex flex-col items-center justify-start bg-gradient-to-r from-blue-300 to-green-300 p-4 rounded-lg">
-      <h1 className="text-3xl font-bold mb-6 text-white text-center">
-        Русский алфавит
-      </h1>
-      <div className="flex justify-center mb-12">
+    <div className="flex flex-col items-center justify-start bg-gradient-to-r from-blue-300 to-green-300 p-4 rounded-lg w-[550px]">
+      <div className="flex justify-center mb-12 mt-12">
         <RussianLetter 
           letter={currentLetter} 
           color={letterColors[russianLetters.indexOf(currentLetter)]} 

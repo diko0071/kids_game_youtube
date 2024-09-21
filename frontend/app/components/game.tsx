@@ -141,11 +141,8 @@ export default function Game({ onComplete }: GameProps) {
   const dessertColors = isIceCream ? iceCreamColors : cakeColors
 
   return (
-    <div className="flex flex-col items-center justify-start bg-gradient-to-r from-pink-300 to-purple-300 p-4 rounded-lg">
-      <h1 className="text-3xl font-bold mb-6 text-white text-center">
-        {isIceCream ? 'Мороженое' : 'Тортики'}
-      </h1>
-      <div className="flex justify-center gap-12 mb-12">
+    <div className="flex flex-col items-center justify-start bg-gradient-to-r from-pink-300 to-purple-300 p-4 rounded-lg w-[550px]">
+      <div className="flex justify-center gap-12 mb-12 mt-12">
         {Array.from({ length: dessertCount }).map((_, index) => (
           <DessertComponent 
             key={index} 
