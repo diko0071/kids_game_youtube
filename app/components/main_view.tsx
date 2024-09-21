@@ -1,6 +1,7 @@
 //REWRITE
 "use client"
 
+import GhostGame from './ghost_game'
 import { useState, useEffect, useRef } from 'react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -39,7 +40,10 @@ export default function MainView() {
   const [currentGameIndex, setCurrentGameIndex] = useState(0)
   const [games, setGames] = useState<JSX.Element[]>([])
   const [showContentView, setShowContentView] = useState(false)
-  const [content, setContent] = useState({ videoUrl: '', playlistUrl: '' })
+  const [content, setContent] = useState({ 
+    videoUrl: 'https://www.youtube.com/watch?v=b3JIkVACuLo&list=PLhKXHJ96OITFAFIXbJixqKj6sIcMwWgFM', 
+    playlistUrl: '' 
+  })
   const [isFullScreen, setIsFullScreen] = useState(false);
   const fullscreenAttemptRef = useRef<number | null>(null);
   const wasFullScreenRef = useRef(false);
@@ -89,6 +93,7 @@ export default function MainView() {
     const gameComponents = [
       () => <Game key="game" onComplete={handleGameComplete} />,
       () => <RussianAlphabetGame key="alphabet" onComplete={handleGameComplete} />,
+      () => <GhostGame key="ghost" onComplete={handleGameComplete} />,
     ]
     
     const shuffled = [...Array(numExercises)].map(() => 
@@ -254,6 +259,18 @@ export default function MainView() {
     return () => {
       if (playerRef.current) {
         playerRef.current.destroy()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const videoId = extractVideoId(content.videoUrl)
+    if (videoId) {
+      setCurrentVideoId(videoId)
+      if (playerRef.current) {
+        playerRef.current.loadVideoById(videoId)
+      } else {
+        initializeYouTubePlayer(videoId)
       }
     }
   }, [])
