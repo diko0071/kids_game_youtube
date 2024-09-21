@@ -22,9 +22,14 @@ const RussianLetter = ({ letter, color }: { letter: string; color: string }) => 
   </svg>
 )
 
-const russianWords = [
-    'Арбуз', 'Банан', 'Ваза', 'Гриб', 'Дом'
-]
+const russianWords = {
+    'А': ['Арбуз', 'Апельсин', 'Автобус', 'Аист'],
+    'Б': ['Банан', 'Бабочка', 'Белка', 'Берёза'],
+    'В': ['Ваза', 'Волк', 'Вода', 'Велосипед'],
+    'Г': ['Гриб', 'Груша', 'Гитара', 'Голубь'],
+    'Д': ['Дом', 'Дерево', 'Дождь', 'Дыня']
+  }
+  
 
 interface RussianAlphabetGameProps {
     onComplete: () => void;
@@ -67,8 +72,9 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
   }, [playSound])
 
   const speakRussianWord = useCallback((letter: string) => {
-    const index = russianLetters.indexOf(letter)
-    const utterance = new SpeechSynthesisUtterance(russianWords[index])
+    const words = russianWords[letter as keyof typeof russianWords]
+    const randomWord = words[Math.floor(Math.random() * words.length)]
+    const utterance = new SpeechSynthesisUtterance(randomWord)
     utterance.lang = 'ru-RU'
     speechSynthesis.speak(utterance)
   }, [])

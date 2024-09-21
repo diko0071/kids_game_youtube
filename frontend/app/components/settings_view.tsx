@@ -32,10 +32,6 @@ export default function ExerciseSettings({ numExercises = 5, frequency = 3, onSa
 
   return (
     <div className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Exercise Settings</CardTitle>
-        <CardDescription>Configure your video exercise routine</CardDescription>
-      </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">

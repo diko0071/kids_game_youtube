@@ -1,3 +1,4 @@
+//REWRITE
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
@@ -6,11 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import ExerciseSettings from './settings_view'
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { Play, Pause, Volume2, Edit, Settings } from "lucide-react"
-import SingleQuizCard from './quiz_card'
-import Confetti from 'react-confetti'
+import { Play, Pause, Volume2, Edit, Settings, Video } from "lucide-react"
 import Game from './game'
 import RussianAlphabetGame from './russian_alphabet_game'
+import ContentView from './content_view'
 
 declare global {
   interface Window {
@@ -27,31 +27,39 @@ export default function MainView() {
   const [isUrlLocked, setIsUrlLocked] = useState<boolean>(false)
   const playerRef = useRef<any>(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [numExercises, setNumExercises] = useState(5)
+  const [numExercises, setNumExercises] = useState(2)
   const [completedGames, setCompletedGames] = useState(0)
   const [frequency, setFrequency] = useState(1)
-  const [transcript, setTranscript] = useState('')
   const [isExercising, setIsExercising] = useState(false)
-  const [exercise, setExercise] = useState('')
-  const [options, setOptions] = useState<string[]>([])
-  const [rightAnswer, setRightAnswer] = useState('')
-  const [userAnswer, setUserAnswer] = useState('')
-  const [showConfetti, setShowConfetti] = useState(false)
-  const [feedback, setFeedback] = useState('')
-  const [previousResponses, setPreviousResponses] = useState<Array<{question: string, answer: string}>>([])
-  const [question, setQuestion] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [lastExerciseTime, setLastExerciseTime] = useState<number>(0)
   const [isCheckingExerciseTime, setIsCheckingExerciseTime] = useState<boolean>(false)
   const [currentGameIndex, setCurrentGameIndex] = useState(0)
   const [games, setGames] = useState<JSX.Element[]>([])
+  const [showContentView, setShowContentView] = useState(false)
+  const [content, setContent] = useState({ videoUrl: '', playlistUrl: '' })
+
+  const handleSaveContent = (newContent: { videoUrl: string; playlistUrl: string }) => {
+    setContent(newContent)
+    const videoId = extractVideoId(newContent.videoUrl)
+    if (videoId) {
+      setCurrentVideoId(videoId)
+      if (playerRef.current) {
+        playerRef.current.loadVideoById(videoId)
+      } else {
+        initializeYouTubePlayer(videoId)
+      }
+    }
+  }
 
   const checkExerciseTime = () => {
     if (!playerRef.current || isGenerating || isExercising) return
 
     const currentTime = Math.floor(playerRef.current.getCurrentTime())
-    if (currentTime - lastExerciseTime >= frequency * 60) {
+    const timeSinceLastExercise = currentTime - lastExerciseTime
+    
+    if (timeSinceLastExercise >= frequency * 60) {
       handleExercise()
       setLastExerciseTime(currentTime)
     }
@@ -86,15 +94,25 @@ export default function MainView() {
     ))
   }
 
-
   const handleGameComplete = () => {
-    setCompletedGames(prev => prev + 1)
-    if (completedGames + 1 >= numExercises) {
-      resetExercise()
-    } else {
-      setCurrentGameIndex(prev => prev + 1)
-    }
-  }
+    setCompletedGames(prev => {
+      const newCompletedGames = prev + 1;
+      console.log(`Completed games: ${newCompletedGames}, Total games: ${numExercises}`);
+      
+      if (newCompletedGames >= numExercises) {
+        console.log('All games completed, resetting exercise');
+        setTimeout(() => {
+          resetExercise();
+        }, 500);
+      } else {
+        const nextGameIndex = Math.min(newCompletedGames, numExercises - 1);
+        console.log(`Moving to next game: ${nextGameIndex + 1}`);
+        setCurrentGameIndex(nextGameIndex);
+      }
+      
+      return newCompletedGames;
+    });
+  };
 
   const handleExercise = () => {
     if (!playerRef.current) return
@@ -107,14 +125,17 @@ export default function MainView() {
   }
 
   const resetExercise = () => {
-    setIsExercising(false)
-    setIsDialogOpen(false)
-    setCurrentGameIndex(0)
-    setCompletedGames(0)
+    console.log('Resetting exercise');
+    setIsExercising(false);
+    setIsDialogOpen(false);
+    setCurrentGameIndex(0);
+    setCompletedGames(0);
     if (playerRef.current) {
-      playerRef.current.playVideo()
+      console.log('Resuming video');
+      playerRef.current.playVideo();
     }
-  }
+  };
+  
 
   const extractVideoId = (url: string): string | null => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
@@ -125,7 +146,9 @@ export default function MainView() {
   const handleSaveSettings = (newNumExercises: number, newFrequency: number) => {
     setNumExercises(newNumExercises)
     setFrequency(newFrequency)
+    setLastExerciseTime(0)
   }
+
 
   const handleFetchVideo = () => {
     const videoId = extractVideoId(inputUrl)
@@ -206,76 +229,65 @@ export default function MainView() {
         <div className="aspect-video bg-gray-200">
           <div id="youtube-player"></div>
         </div>
-        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-            <Input
-              type="text"
-              placeholder="Paste YouTube URL here"
-              value={inputUrl}
-              onChange={(e) => setInputUrl(e.target.value)}
-              className="flex-grow"
-              disabled={isUrlLocked}
-            />
-            <Button 
-              onClick={isUrlLocked ? handleUrlEdit : handleFetchVideo} 
-              className="w-full sm:w-auto"
-            >
-              {isUrlLocked ? (
-                <>
-                  <Edit className="mr-2 h-4 w-4" /> Edit Video
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 h-4 w-4" /> Fetch Video
-                </>
-              )}
-            </Button>
-          </div>
-          <div className="flex justify-between items-center">
-            <div className="flex flex-wrap items-center justify-start gap-4">
-              <div className="flex items-center space-x-2">
-                <Button size="icon" variant="outline" onClick={togglePlayPause}>
-                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  <span className="sr-only">{isPlaying ? "Pause" : "Play"}</span>
-                </Button>
-              </div>
-              <div className="flex items-center space-x-2 flex-grow sm:flex-grow-0">
-                <Volume2 className="h-4 w-4 text-gray-500" />
-                <Slider
-                  value={[volume]}
-                  onValueChange={handleVolumeChange}
-                  max={100}
-                  step={1}
-                  className="w-24 sm:w-32"
-                />
-              </div>
+        <div className="p-4 sm:p-6 space-y-4">
+          <div className="flex justify-end items-center">
+            <div className="flex space-x-2">
+              <Dialog open={showSettings} onOpenChange={setShowSettings}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogTitle>Settings</DialogTitle>
+                  <DialogDescription>Configure your video exercise routine</DialogDescription>
+                  <ExerciseSettings 
+                    onClose={() => setShowSettings(false)} 
+                    numExercises={numExercises} 
+                    frequency={frequency} 
+                    onSave={handleSaveSettings} 
+                  />
+                </DialogContent>
+              </Dialog>
+              <Dialog open={showContentView} onOpenChange={setShowContentView}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Video className="h-4 w-4 mr-2" />
+                    Content
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogTitle>Content URLs</DialogTitle>
+                  <DialogDescription>Enter a video URL or a playlist URL</DialogDescription>
+                  <ContentView 
+                    onClose={() => setShowContentView(false)} 
+                    content={content} 
+                    onSave={handleSaveContent}
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
-            <Dialog open={showSettings} onOpenChange={setShowSettings}>
-              <DialogTrigger asChild>
-                <Button variant="link">
-                  Settings
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <ExerciseSettings 
-                  onClose={() => setShowSettings(false)} 
-                  numExercises={numExercises} 
-                  frequency={frequency} 
-                  onSave={handleSaveSettings} 
-                />
-              </DialogContent>
-            </Dialog>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogTitle>Mini-Game {currentGameIndex + 1}/{numExercises}</DialogTitle>
-              <DialogDescription>Complete the game to continue watching the video.</DialogDescription>
-              {isExercising && games[currentGameIndex]}
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
-      {showConfetti && <Confetti className="absolute top-0 left-0 w-full h-full z-50" />}
+      <Dialog 
+        open={isDialogOpen} 
+        onOpenChange={(open) => {
+          console.log(`Dialog open state changed to: ${open}`);
+          if (!open) {
+            resetExercise();
+          }
+          setIsDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px] flex flex-col items-center">
+          <DialogTitle>Mini-Game {Math.min(currentGameIndex + 1, numExercises)}/{numExercises}</DialogTitle>
+          <DialogDescription>Complete the game to continue watching the video.</DialogDescription>
+          {isExercising && currentGameIndex < numExercises && games[currentGameIndex]}
+          {isExercising && currentGameIndex >= numExercises && <p>All games completed!</p>}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
