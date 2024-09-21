@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import ExerciseSettings from './settings_view'
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { Play, Pause, Volume2, Edit, Settings, Video } from "lucide-react"
+import { Play, Pause, Volume2, Edit, Settings, Video, Github } from "lucide-react"
 import Game from './game'
 import RussianAlphabetGame from './russian_alphabet_game'
 import ContentView from './content_view'
@@ -40,6 +40,10 @@ export default function MainView() {
   const [games, setGames] = useState<JSX.Element[]>([])
   const [showContentView, setShowContentView] = useState(false)
   const [content, setContent] = useState({ videoUrl: '', playlistUrl: '' })
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const fullscreenAttemptRef = useRef<number | null>(null);
+  const wasFullScreenRef = useRef(false);
+  
 
   const handleSaveContent = (newContent: { videoUrl: string; playlistUrl: string }) => {
     setContent(newContent)
@@ -116,27 +120,90 @@ export default function MainView() {
   };
 
   const handleExercise = () => {
-    if (!playerRef.current) return
-    playerRef.current.pauseVideo()
-    setIsExercising(true)
-    setIsDialogOpen(true)
-    generateRandomGames()
-    setCurrentGameIndex(0)
-    setCompletedGames(0)
+    if (!playerRef.current) return;
+    playerRef.current.pauseVideo();
+    const iframe = playerRef.current.getIframe();
+    const isCurrentlyFullscreen = 
+      document.fullscreenElement === iframe ||
+      (document as any).webkitFullscreenElement === iframe ||
+      (document as any).mozFullScreenElement === iframe ||
+      (document as any).msFullscreenElement === iframe;
+    
+    console.log('handleExercise: Current fullscreen state:', isCurrentlyFullscreen);
+    wasFullScreenRef.current = isCurrentlyFullscreen; 
+    if (isCurrentlyFullscreen) {
+      console.log('handleExercise: Exiting fullscreen');
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        (document as any).msExitFullscreen();
+      }
+    }
+    setIsExercising(true);
+    setIsDialogOpen(true);
+    generateRandomGames();
+    setCurrentGameIndex(0);
+    setCompletedGames(0);
   }
 
   const resetExercise = () => {
-    console.log('Resetting exercise');
+    console.log('resetExercise: Starting reset');
     setIsExercising(false);
     setIsDialogOpen(false);
     setCurrentGameIndex(0);
     setCompletedGames(0);
     if (playerRef.current) {
-      console.log('Resuming video');
+      console.log('resetExercise: Resuming video');
       playerRef.current.playVideo();
+      //{change 2}
+      if (wasFullScreenRef.current) {
+        console.log('resetExercise: Attempting to enter fullscreen');
+        if (fullscreenAttemptRef.current) {
+          clearTimeout(fullscreenAttemptRef.current);
+        }
+        fullscreenAttemptRef.current = window.setTimeout(() => {
+          const iframe = playerRef.current.getIframe();
+          const enterFullscreen = () => {
+            console.log('enterFullscreen: Trying to enter fullscreen mode');
+            const fullscreenPromise = 
+              iframe.requestFullscreen?.() || 
+              iframe.webkitRequestFullscreen?.() || 
+              iframe.mozRequestFullScreen?.() || 
+              iframe.msRequestFullscreen?.();
+            
+            if (fullscreenPromise instanceof Promise) {
+              fullscreenPromise.then(() => {
+                console.log('enterFullscreen: Successfully entered fullscreen mode');
+              }).catch((error) => {
+                console.log('enterFullscreen: Failed to enter fullscreen mode:', error);
+                console.log('enterFullscreen: Retrying in 500ms');
+                setTimeout(enterFullscreen, 500);
+              });
+            } else {
+              console.log('enterFullscreen: Fullscreen method is not a Promise');
+            }
+          };
+          enterFullscreen();
+          fullscreenAttemptRef.current = null;
+        }, 100);
+      } else {
+        console.log('resetExercise: Not attempting fullscreen, wasFullScreen is false');
+      }
     }
   };
-  
+
+  useEffect(() => {
+    return () => {
+      if (fullscreenAttemptRef.current) {
+        console.log('Cleanup: Clearing fullscreen attempt timeout');
+        clearTimeout(fullscreenAttemptRef.current);
+      }
+    };
+  }, []);
 
   const extractVideoId = (url: string): string | null => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
@@ -150,58 +217,25 @@ export default function MainView() {
     setLastExerciseTime(0)
   }
 
-
-  const handleFetchVideo = () => {
-    const videoId = extractVideoId(inputUrl)
-    if (videoId) {
-      setCurrentVideoId(videoId)
-      setIsUrlLocked(true)
-      if (playerRef.current) {
-        playerRef.current.loadVideoById(videoId)
-      } else {
-        initializeYouTubePlayer(videoId)
-      }
-    }
-  }
-
-  const handleUrlEdit = () => {
-    setIsUrlLocked(false)
-  }
-
-  const togglePlayPause = () => {
-    if (playerRef.current) {
-      if (isPlaying) {
-        playerRef.current.pauseVideo()
-      } else {
-        playerRef.current.playVideo()
-      }
-      setIsPlaying(!isPlaying)
-    }
-  }
-
-  const handleVolumeChange = (newVolume: number[]) => {
-    setVolume(newVolume[0])
-    if (playerRef.current) {
-      playerRef.current.setVolume(newVolume[0])
-    }
-  }
-
   const initializeYouTubePlayer = (videoId: string) => {
     if (typeof window !== 'undefined' && window.YT) {
       new window.YT.Player('youtube-player', {
         height: '100%',
         width: '100%',
         videoId: videoId,
+        playerVars: {
+          allowfullscreen: 1,
+        },
         events: {
           onReady: (event: any) => {
-            playerRef.current = event.target
-            playerRef.current.setVolume(volume)
+            playerRef.current = event.target;
+            playerRef.current.setVolume(volume);
           },
           onStateChange: (event: any) => {
-            setIsPlaying(event.data === window.YT.PlayerState.PLAYING)
+            setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
           },
         },
-      })
+      });
     }
   }
 
@@ -226,9 +260,9 @@ export default function MainView() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8 flex flex-col items-center">
-      <div className="w-full max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="aspect-video bg-gray-200">
-          <div id="youtube-player"></div>
+      <div className="w-[90%] max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="aspect-video bg-gray-200 relative">
+          <div id="youtube-player" className="absolute inset-0"></div>
         </div>
         <div className="p-4 sm:p-6 space-y-4">
           <div className="flex justify-end items-center">
