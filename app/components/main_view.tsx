@@ -1,6 +1,4 @@
-//REWRITE
 "use client"
-
 import GhostGame from './ghost_game'
 import { useState, useEffect, useRef } from 'react'
 import { Input } from "@/components/ui/input"
@@ -40,6 +38,7 @@ export default function MainView() {
   const [currentGameIndex, setCurrentGameIndex] = useState(0)
   const [games, setGames] = useState<JSX.Element[]>([])
   const [showContentView, setShowContentView] = useState(false)
+  const [isYouTubeApiReady, setIsYouTubeApiReady] = useState(false);
   const [content, setContent] = useState({ 
     videoUrl: 'https://www.youtube.com/watch?v=b3JIkVACuLo&list=PLhKXHJ96OITFAFIXbJixqKj6sIcMwWgFM', 
     playlistUrl: '' 
@@ -47,7 +46,12 @@ export default function MainView() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const fullscreenAttemptRef = useRef<number | null>(null);
   const wasFullScreenRef = useRef(false);
-  
+
+  useEffect(() => {
+    if (isYouTubeApiReady) {
+      handleSaveContent(content);
+    }
+  }, [isYouTubeApiReady, content]);
 
   const handleSaveContent = (newContent: { videoUrl: string; playlistUrl: string }) => {
     setContent(newContent)
@@ -251,6 +255,7 @@ export default function MainView() {
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
 
     window.onYouTubeIframeAPIReady = () => {
+      setIsYouTubeApiReady(true);
       if (currentVideoId) {
         initializeYouTubePlayer(currentVideoId)
       }
