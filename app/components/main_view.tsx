@@ -40,8 +40,8 @@ export default function MainView() {
   const [showContentView, setShowContentView] = useState(false)
   const [isYouTubeApiReady, setIsYouTubeApiReady] = useState(false);
   const [content, setContent] = useState({ 
-    videoUrl: 'https://www.youtube.com/watch?v=b3JIkVACuLo&list=PLhKXHJ96OITFAFIXbJixqKj6sIcMwWgFM', 
-    playlistUrl: '' 
+    videoUrl: '', 
+    playlistId: 'PLRTB5A-krdflIE9SQt_2af1jbSxaomqTU' 
   })
   const [isFullScreen, setIsFullScreen] = useState(false);
   const fullscreenAttemptRef = useRef<number | null>(null);
@@ -52,16 +52,37 @@ export default function MainView() {
       handleSaveContent(content);
     }
   }, [isYouTubeApiReady, content]);
+  
 
-  const handleSaveContent = (newContent: { videoUrl: string; playlistUrl: string }) => {
+  const handleSaveContent = (newContent: { videoUrl: string; playlistId: string }) => {
     setContent(newContent)
     const videoId = extractVideoId(newContent.videoUrl)
     if (videoId) {
       setCurrentVideoId(videoId)
       if (playerRef.current) {
-        playerRef.current.loadVideoById(videoId)
+        if (newContent.playlistId) {
+          playerRef.current.loadPlaylist({
+            listType: 'playlist',
+            list: newContent.playlistId,
+            index: 0,
+            startSeconds: 0
+          })
+        } else {
+          playerRef.current.loadVideoById(videoId)
+        }
       } else {
-        initializeYouTubePlayer(videoId)
+        initializeYouTubePlayer(videoId, newContent.playlistId)
+      }
+    } else if (newContent.playlistId) {
+      if (playerRef.current) {
+        playerRef.current.loadPlaylist({
+          listType: 'playlist',
+          list: newContent.playlistId,
+          index: 0,
+          startSeconds: 0
+        })
+      } else {
+        initializeYouTubePlayer(null, newContent.playlistId)
       }
     }
   }
@@ -72,7 +93,10 @@ export default function MainView() {
     const currentTime = Math.floor(playerRef.current.getCurrentTime())
     const timeSinceLastExercise = currentTime - lastExerciseTime
     
+    console.log(`Current time: ${currentTime}, Last exercise time: ${lastExerciseTime}, Time since last exercise: ${timeSinceLastExercise}, Frequency: ${frequency * 60}`)
+    
     if (timeSinceLastExercise >= frequency * 60) {
+      console.log('Time to show exercise!')
       handleExercise()
       setLastExerciseTime(currentTime)
     }
@@ -83,15 +107,17 @@ export default function MainView() {
     if (isPlaying && !isCheckingExerciseTime) {
       setIsCheckingExerciseTime(true)
       intervalId = setInterval(checkExerciseTime, 1000)
+      console.log('Started exercise check interval')
     }
 
     return () => {
       if (intervalId) {
         clearInterval(intervalId)
+        console.log('Cleared exercise check interval')
       }
       setIsCheckingExerciseTime(false)
     }
-  }, [isPlaying, frequency, isGenerating, isExercising])
+  }, [isPlaying, frequency, isGenerating, isExercising, lastExerciseTime]) 
 
   const generateRandomGames = () => {
     const gameComponents = [
@@ -168,7 +194,6 @@ export default function MainView() {
     if (playerRef.current) {
       console.log('resetExercise: Resuming video');
       playerRef.current.playVideo();
-      //{change 2}
       if (wasFullScreenRef.current) {
         console.log('resetExercise: Attempting to enter fullscreen');
         if (fullscreenAttemptRef.current) {
@@ -226,14 +251,17 @@ export default function MainView() {
     setLastExerciseTime(0)
   }
 
-  const initializeYouTubePlayer = (videoId: string) => {
+  const initializeYouTubePlayer = (videoId: string | null, playlistId?: string) => {
     if (typeof window !== 'undefined' && window.YT) {
       new window.YT.Player('youtube-player', {
         height: '100%',
         width: '100%',
-        videoId: videoId,
+        videoId: videoId || undefined,
         playerVars: {
           allowfullscreen: 1,
+          listType: playlistId ? 'playlist' : undefined,
+          list: playlistId || undefined,
+          loop: 1
         },
         events: {
           onReady: (event: any) => {
@@ -243,6 +271,12 @@ export default function MainView() {
           onStateChange: (event: any) => {
             setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
           },
+          onError: (event: any) => {
+            console.error('YouTube player error:', event.data);
+            if (playerRef.current) {
+              playerRef.current.nextVideo();
+            }
+          }
         },
       });
     }
@@ -316,7 +350,7 @@ export default function MainView() {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogTitle>Content URLs</DialogTitle>
-                  <DialogDescription>Enter a video URL</DialogDescription>
+                  <DialogDescription>Enter a video URL or a playlist ID</DialogDescription>
                   <ContentView 
                     onClose={() => setShowContentView(false)} 
                     content={content} 
