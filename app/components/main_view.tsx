@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import ExerciseSettings from './settings_view'
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { Play, Pause, Volume2, Edit, Settings, Video, Github } from "lucide-react"
+import { Play, Pause, Volume2, Edit, Settings, Video, Github, Maximize, Minimize } from "lucide-react"
 import Game from './game'
 import RussianAlphabetGame from './russian_alphabet_game'
 import ContentView from './content_view'
@@ -30,6 +30,7 @@ export default function MainView() {
   const [numExercises, setNumExercises] = useState(2)
   const [completedGames, setCompletedGames] = useState(0)
   const [frequency, setFrequency] = useState(1)
+  const [controls, setControls] = useState(1)
   const [isExercising, setIsExercising] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -39,6 +40,7 @@ export default function MainView() {
   const [games, setGames] = useState<JSX.Element[]>([])
   const [showContentView, setShowContentView] = useState(false)
   const [isYouTubeApiReady, setIsYouTubeApiReady] = useState(false);
+  const [currentVideoTime, setCurrentVideoTime] = useState<number>(0);
   const [content, setContent] = useState({ 
     videoUrl: '', 
     playlistId: 'PLRTB5A-krdflIE9SQt_2af1jbSxaomqTU' 
@@ -46,6 +48,7 @@ export default function MainView() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const fullscreenAttemptRef = useRef<number | null>(null);
   const wasFullScreenRef = useRef(false);
+
 
   useEffect(() => {
     if (isYouTubeApiReady) {
@@ -245,11 +248,36 @@ export default function MainView() {
     return (match && match[2].length === 11) ? match[2] : null
   }
 
-  const handleSaveSettings = (newNumExercises: number, newFrequency: number) => {
-    setNumExercises(newNumExercises)
-    setFrequency(newFrequency)
-    setLastExerciseTime(0)
+  const handleSaveSettings = (newNumExercises: number, newFrequency: number, newControls: number) => {
+    if (playerRef.current) {
+      setCurrentVideoTime(playerRef.current.getCurrentTime());
+    }
+
+    localStorage.setItem('videoSettings', JSON.stringify({
+      numExercises: newNumExercises,
+      frequency: newFrequency,
+      controls: newControls,
+      currentVideoTime: currentVideoTime,
+      currentVideoId: currentVideoId,
+      content: content
+    }));
+
+    window.location.reload();
   }
+
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('videoSettings');
+    if (savedSettings) {
+      const parsedSettings = JSON.parse(savedSettings);
+      setNumExercises(parsedSettings.numExercises);
+      setFrequency(parsedSettings.frequency);
+      setControls(parsedSettings.controls);
+      setCurrentVideoTime(parsedSettings.currentVideoTime);
+      setCurrentVideoId(parsedSettings.currentVideoId);
+      setContent(parsedSettings.content);
+    }
+  }, []);
+
 
   const initializeYouTubePlayer = (videoId: string | null, playlistId?: string) => {
     if (typeof window !== 'undefined' && window.YT) {
@@ -261,12 +289,19 @@ export default function MainView() {
           allowfullscreen: 1,
           listType: playlistId ? 'playlist' : undefined,
           list: playlistId || undefined,
-          loop: 1
+          loop: 1,
+          rel: 0,
+          controls: controls,
+          modestbranding: 0,
+          start: Math.floor(currentVideoTime),
+          iv_load_policy: 3,
+          showinfo: 0,
         },
         events: {
           onReady: (event: any) => {
             playerRef.current = event.target;
             playerRef.current.setVolume(volume);
+            addCustomOverlay();
           },
           onStateChange: (event: any) => {
             setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
@@ -314,10 +349,83 @@ export default function MainView() {
     }
   }, [])
 
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+
+  const addCustomOverlay = () => {
+    if (playerContainerRef.current) {
+      const overlay = document.createElement('div');
+      overlay.style.position = 'absolute';
+      overlay.style.top = '60%';
+      overlay.style.left = '0';
+      overlay.style.right = '0';
+      overlay.style.bottom = '5%';
+      overlay.style.backgroundColor = 'transparent';
+      overlay.style.zIndex = '10';
+      overlay.style.pointerEvents = 'auto';
+  
+      overlay.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (playerRef.current) {
+          if (playerRef.current.getPlayerState() === window.YT.PlayerState.PLAYING) {
+            playerRef.current.pauseVideo();
+          } else {
+            playerRef.current.playVideo();
+          }
+        }
+      });
+  
+      playerContainerRef.current.appendChild(overlay);
+    }
+  }
+  useEffect(() => {
+    const preventNavigation = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'A' && target.getAttribute('href')) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    const preventBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    // Capture clicks in the capturing phase
+    document.addEventListener('click', preventNavigation, true);
+    document.addEventListener('touchend', preventNavigation, true);
+
+    // Prevent page unload
+    window.addEventListener('beforeunload', preventBeforeUnload);
+
+    // Clean up event listeners on component unmount
+    return () => {
+      document.removeEventListener('click', preventNavigation, true);
+      document.removeEventListener('touchend', preventNavigation, true);
+      window.removeEventListener('beforeunload', preventBeforeUnload);
+    };
+  }, []); 
+
+  useEffect(() => {
+    const preventLinkNavigation = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'A' && target.getAttribute('href')) {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener('click', preventLinkNavigation, true);
+
+    return () => {
+      document.removeEventListener('click', preventLinkNavigation, true);
+    };
+  }, []); 
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8 flex flex-col items-center">
       <div className="w-[90%] max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="aspect-video bg-gray-200 relative">
+        <div className="aspect-video bg-gray-200 relative" ref={playerContainerRef}>
           <div id="youtube-player" className="absolute inset-0"></div>
         </div>
         <div className="p-4 sm:p-6 space-y-4">
@@ -337,7 +445,8 @@ export default function MainView() {
                     onClose={() => setShowSettings(false)} 
                     numExercises={numExercises} 
                     frequency={frequency} 
-                    onSave={handleSaveSettings} 
+                    controls={controls}
+                    onSave={handleSaveSettings}
                   />
                 </DialogContent>
               </Dialog>
