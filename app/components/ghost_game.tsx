@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
+import { useGameAudio } from '../hooks/useGameAudio'
+import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
 
 const ghostColors = [
   { color: '#FFFFFF', name: 'Белый' },
@@ -31,41 +33,31 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
   const [options, setOptions] = useState<{ color: string; name: string }[]>([])
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
 
+  const { playHappySound, playSadSound } = useGameAudio()
+  const { speakText } = useSpeechSynthesis()
+
   const speakRussianColor = useCallback((colorName: string) => {
-    const utterance = new SpeechSynthesisUtterance(colorName)
-    utterance.lang = 'ru-RU'
-    speechSynthesis.speak(utterance)
-  }, [])
+    speakText(colorName)
+  }, [speakText])
 
-  const playSound = useCallback((frequency: number, duration: number) => {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-    const oscillator = audioContext.createOscillator()
-    const gainNode = audioContext.createGain()
-
-    oscillator.connect(gainNode)
-    gainNode.connect(audioContext.destination)
-
-    oscillator.frequency.value = frequency
-    oscillator.type = 'sine'
-
-    gainNode.gain.setValueAtTime(0, audioContext.currentTime)
-    gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.01)
-    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration - 0.01)
-
-    oscillator.start()
-    oscillator.stop(audioContext.currentTime + duration)
-  }, [])
-
-  const playHappySound = useCallback(() => {
-    playSound(523.25, 0.2) // C5
-    setTimeout(() => playSound(659.25, 0.2), 200) // E5
-    setTimeout(() => playSound(783.99, 0.3), 400) // G5
-  }, [playSound])
-
-  const playSadSound = useCallback(() => {
-    playSound(392.00, 0.3) // G4
-    setTimeout(() => playSound(349.23, 0.3), 300) // F4
-  }, [playSound])
+  const handleAnswer = (answer: { color: string; name: string }) => {
+    speakRussianColor(answer.name)
+    if (answer.color === currentColor.color) {
+      setIsCorrect(true)
+      playHappySound()
+      setTimeout(() => {
+        onComplete()
+        generateNewRound()
+      }, 2000)
+    } else {
+      setIsCorrect(false)
+      setMessage('Неверно, попробуй еще раз!')
+      playSadSound()
+      // Озвучиваем "Неверно, попробуй еще раз" на русском языке
+      speakText('Неверно, попробуй еще раз')
+      // Убираем вызов generateNewRound(), чтобы оставить ту же игру
+    }
+  }
 
   useEffect(() => {
     generateNewRound()
@@ -84,22 +76,6 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
     }
     setOptions(newOptions.sort(() => Math.random() - 0.5))
     setIsCorrect(null)
-  }
-
-  const handleAnswer = (answer: { color: string; name: string }) => {
-    speakRussianColor(answer.name)
-    if (answer.color === currentColor.color) {
-      setIsCorrect(true)
-      playHappySound()
-      setTimeout(() => {
-        onComplete()
-        generateNewRound()
-      }, 2000)
-    } else {
-      setIsCorrect(false)
-      playSadSound()
-      setTimeout(generateNewRound, 2000)
-    }
   }
 
   return (
