@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
-import { useGameAudio } from '../hooks/useGameAudio'
+import { useGameLogic } from '../hooks/useGameLogic'
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
 
 const russianLetters = ['А', 'Б', 'В', 'Г', 'Д']
@@ -25,40 +25,49 @@ const RussianLetter = ({ letter, color }: { letter: string; color: string }) => 
 )
 
 const russianWords = {
-    'А': ['Арбуз', 'Апельсин', 'Автобус', 'Аист'],
-    'Б': ['Банан', 'Бабочка', 'Белка', 'Берёза'],
-    'В': ['Ваза', 'Волк', 'Вода', 'Велосипед'],
-    'Г': ['Гриб', 'Груша', 'Гитара', 'Голубь'],
-    'Д': ['Дом', 'Дерево', 'Дождь', 'Дыня']
-  }
-  
+  'А': [
+    { russian: 'Арбуз', english: 'Watermelon' },
+    { russian: 'Апельсин', english: 'Orange' },
+    { russian: 'Автобус', english: 'Bus' },
+    { russian: 'Аист', english: 'Stork' }
+  ],
+  'Б': [
+    { russian: 'Банан', english: 'Banana' },
+    { russian: 'Бабочка', english: 'Butterfly' },
+    { russian: 'Белка', english: 'Squirrel' },
+    { russian: 'Берёза', english: 'Birch tree' }
+  ],
+  'В': [
+    { russian: 'Ваза', english: 'Vase' },
+    { russian: 'Волк', english: 'Wolf' },
+    { russian: 'Вода', english: 'Water' },
+    { russian: 'Велосипед', english: 'Bicycle' }
+  ],
+  'Г': [
+    { russian: 'Гриб', english: 'Mushroom' },
+    { russian: 'Груша', english: 'Pear' },
+    { russian: 'Гитара', english: 'Guitar' },
+    { russian: 'Голубь', english: 'Pigeon' }
+  ],
+  'Д': [
+    { russian: 'Дом', english: 'House' },
+    { russian: 'Дерево', english: 'Tree' },
+    { russian: 'Дождь', english: 'Rain' },
+    { russian: 'Дыня', english: 'Melon' }
+  ]
+}
 
 interface RussianAlphabetGameProps {
-    onComplete: () => void;
-  }
+  onComplete: () => void;
+}
 
 export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameProps) {
   const [currentLetter, setCurrentLetter] = useState('')
   const [options, setOptions] = useState<string[]>([])
-  const [message, setMessage] = useState('')
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
 
-  const { playHappySound, playSadSound } = useGameAudio()
   const { speakText } = useSpeechSynthesis()
 
-  const speakRussianWord = useCallback((letter: string) => {
-    const words = russianWords[letter as keyof typeof russianWords]
-    const randomWord = words[Math.floor(Math.random() * words.length)]
-    const utterance = new SpeechSynthesisUtterance(randomWord)
-    utterance.lang = 'ru-RU'
-    speechSynthesis.speak(utterance)
-  }, [])
-
-  useEffect(() => {
-    generateNewRound()
-  }, [])
-
-  const generateNewRound = () => {
+  const generateNewQuestion = useCallback(() => {
     const letter = russianLetters[Math.floor(Math.random() * russianLetters.length)]
     setCurrentLetter(letter)
     
@@ -70,28 +79,32 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
       }
     }
     setOptions(newOptions.sort(() => Math.random() - 0.5))
-    setMessage('')
-    setIsCorrect(null)
-  }
+  }, [])
 
-  const handleAnswer = (answer: string) => {
-    speakRussianWord(answer)
-    if (answer === currentLetter) {
-      setMessage('Правильно!')
-      setIsCorrect(true)
-      playHappySound()
-      setTimeout(() => {
-        onComplete()
-        generateNewRound()
-      }, 2000)
-    } else {
-      setMessage('Неверно, попробуй еще раз!')
-      setIsCorrect(false)
-      playSadSound()
-      // Озвучиваем "Неверно, попробуй еще раз" на русском языке
-      speakText('Неверно, попробуй еще раз')
-      // Убираем вызов generateNewRound(), чтобы оставить ту же игру
-    }
+  const checkAnswer = useCallback((answer: string) => {
+    return answer === currentLetter
+  }, [currentLetter])
+
+  const speakRussianAndEnglishWord = useCallback((letter: string) => {
+    const words = russianWords[letter as keyof typeof russianWords]
+    const randomWord = words[Math.floor(Math.random() * words.length)]
+    speakText(`${randomWord.russian}, ${randomWord.english}`)
+  }, [speakText])
+
+  const { isCorrect, message, handleAnswer, nextQuestion } = useGameLogic(
+    generateNewQuestion,
+    checkAnswer,
+    onComplete,
+    () => {} // No specific failure action
+  )
+
+  useEffect(() => {
+    generateNewQuestion()
+  }, [generateNewQuestion])
+
+  const handleLetterClick = (letter: string) => {
+    speakRussianAndEnglishWord(letter)
+    handleAnswer(letter)
   }
 
   return (
@@ -106,7 +119,7 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
         {options.map((option) => (
           <Button
             key={option}
-            onClick={() => handleAnswer(option)}
+            onClick={() => handleLetterClick(option)}
             className="text-3xl font-bold w-16 h-16 rounded-full bg-yellow-400 hover:bg-yellow-500 text-purple-800"
           >
             {option}
@@ -114,11 +127,7 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
         ))}
       </div>
       {message && (
-        <div
-          className={`text-2xl font-bold mb-4 ${
-            isCorrect ? 'text-green-500' : 'text-red-500'
-          }`}
-        >
+        <div className={`text-2xl font-bold mb-4 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
           {message}
         </div>
       )}

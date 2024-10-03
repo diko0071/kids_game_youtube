@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider"
 import ExerciseSettings from './settings_view'
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Play, Pause, Volume2, Edit, Settings, Video, Github, Maximize, Minimize } from "lucide-react"
-import Game from './game'
+import Game from './numbers_game'
 import RussianAlphabetGame from './russian_alphabet_game'
 import ContentView from './content_view'
 import { DialogGame, DialogGameContent, DialogGameTitle, DialogGameDescription, DialogGameTrigger, DialogGameFooter } from '@/components/ui/dialog_game'

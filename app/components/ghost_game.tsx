@@ -2,15 +2,24 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
-import { useGameAudio } from '../hooks/useGameAudio'
+import { useGameLogic } from '../hooks/useGameLogic'
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
 
 const ghostColors = [
-  { color: '#FFFFFF', name: 'Белый' },
-  { color: '#FFC0CB', name: 'Розовый' },
-  { color: '#FFFF00', name: 'Желтый' },
-  { color: '#0000FF', name: 'Синий' },
-  { color: '#FF0000', name: 'Красный' }
+  { color: '#FFFFFF', name: 'Белый', englishName: 'White' },
+  { color: '#FFC0CB', name: 'Розовый', englishName: 'Pink' },
+  { color: '#FFFF00', name: 'Желтый', englishName: 'Yellow' },
+  { color: '#0000FF', name: 'Синий', englishName: 'Blue' },
+  { color: '#FF0000', name: 'Красный', englishName: 'Red' },
+  { color: '#000000', name: 'Черный', englishName: 'Black' },
+  { color: '#800080', name: 'Фиолетовый', englishName: 'Violet' },
+  { color: '#008000', name: 'Зеленый', englishName: 'Green' },
+  { color: '#FFA500', name: 'Оранжевый', englishName: 'Orange' },
+  { color: '#808080', name: 'Серый', englishName: 'Gray' },
+  { color: '#FFC0CB', name: 'Розовый', englishName: 'Pink' },
+  { color: '#FFFF00', name: 'Желтый', englishName: 'Yellow' },
+  { color: '#0000FF', name: 'Синий', englishName: 'Blue' },
+  { color: '#FF0000', name: 'Красный', englishName: 'Red' }
 ]
 
 const Ghost = ({ color }: { color: string }) => (
@@ -29,41 +38,12 @@ interface GhostGameProps {
 }
 
 export default function GhostGame({ onComplete }: GhostGameProps) {
-  const [currentColor, setCurrentColor] = useState<{ color: string; name: string }>({ color: '', name: '' })
-  const [options, setOptions] = useState<{ color: string; name: string }[]>([])
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
+  const [currentColor, setCurrentColor] = useState<{ color: string; name: string; englishName: string }>({ color: '', name: '', englishName: '' })
+  const [options, setOptions] = useState<{ color: string; name: string; englishName: string }[]>([])
 
-  const { playHappySound, playSadSound } = useGameAudio()
   const { speakText } = useSpeechSynthesis()
 
-  const speakRussianColor = useCallback((colorName: string) => {
-    speakText(colorName)
-  }, [speakText])
-
-  const handleAnswer = (answer: { color: string; name: string }) => {
-    speakRussianColor(answer.name)
-    if (answer.color === currentColor.color) {
-      setIsCorrect(true)
-      playHappySound()
-      setTimeout(() => {
-        onComplete()
-        generateNewRound()
-      }, 2000)
-    } else {
-      setIsCorrect(false)
-      setMessage('Неверно, попробуй еще раз!')
-      playSadSound()
-      // Озвучиваем "Неверно, попробуй еще раз" на русском языке
-      speakText('Неверно, попробуй еще раз')
-      // Убираем вызов generateNewRound(), чтобы оставить ту же игру
-    }
-  }
-
-  useEffect(() => {
-    generateNewRound()
-  }, [])
-
-  const generateNewRound = () => {
+  const generateNewQuestion = useCallback(() => {
     const color = ghostColors[Math.floor(Math.random() * ghostColors.length)]
     setCurrentColor(color)
 
@@ -75,8 +55,31 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
       }
     }
     setOptions(newOptions.sort(() => Math.random() - 0.5))
-    setIsCorrect(null)
-  }
+  }, [])
+
+  const checkAnswer = useCallback((answer: { color: string; name: string; englishName: string }) => {
+    return answer.color === currentColor.color
+  }, [currentColor])
+
+  const announceColor = useCallback((color: { name: string; englishName: string }) => {
+    speakText(`${color.name}, ${color.englishName}`)
+  }, [speakText])
+
+  const { isCorrect, message, handleAnswer, nextQuestion } = useGameLogic(
+    generateNewQuestion,
+    checkAnswer,
+    onComplete,
+    () => {} // No specific failure action
+  )
+
+  const handleColorClick = useCallback((option: { color: string; name: string; englishName: string }) => {
+    announceColor(option)
+    handleAnswer(option)
+  }, [announceColor, handleAnswer])
+
+  useEffect(() => {
+    generateNewQuestion()
+  }, [generateNewQuestion])
 
   return (
     <div className="flex flex-col items-center justify-start bg-gradient-to-r from-gray-200 to-gray-400 p-4 rounded-lg w-[550px]">
@@ -87,15 +90,15 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
         {options.map((option) => (
           <Button
             key={option.color}
-            onClick={() => handleAnswer(option)}
+            onClick={() => handleColorClick(option)}
             className="w-16 h-16 rounded-full"
             style={{ backgroundColor: option.color }}
           />
         ))}
       </div>
-      {isCorrect !== null && (
+      {message && (
         <div className={`text-2xl font-bold mb-4 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
-          {isCorrect ? 'Правильно!' : 'Попробуй еще раз!'}
+          {message}
         </div>
       )}
     </div>

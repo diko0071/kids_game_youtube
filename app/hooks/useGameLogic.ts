@@ -2,6 +2,19 @@ import { useState, useCallback } from 'react'
 import { useGameAudio } from './useGameAudio'
 import { useSpeechSynthesis } from './useSpeechSynthesis'
 
+const praises = [
+  'Молодец!',
+  'Отлично!',
+  'Правильно!',
+  'Супер!',
+  'Ты умница!',
+  'Здорово!',
+  'Верно!',
+  'Ты справилась!',
+  'Замечательно!',
+  'Так держать!'
+]
+
 export function useGameLogic<T>(
   generateNewQuestion: () => void,
   checkAnswer: (answer: T) => boolean,
@@ -14,24 +27,24 @@ export function useGameLogic<T>(
   const { playHappySound, playSadSound } = useGameAudio()
   const { speakText } = useSpeechSynthesis()
 
-  const handleAnswer = (answer: T) => {
+  const getRandomPraise = () => praises[Math.floor(Math.random() * praises.length)]
+
+  const handleAnswer = useCallback((answer: T) => {
     if (checkAnswer(answer)) {
       setIsCorrect(true)
-      message = 'Правильно! Молодец!'
-      setMessage(message)
+      const praise = getRandomPraise()
+      setMessage(praise)
       playHappySound()
-      speakText(message)
+      speakText(praise)
       onSuccess()
     } else {
       setIsCorrect(false)
-      message = 'Неверно, попробуй еще раз!'
-      setMessage(message)
+      setMessage('Попробуй ещё раз!')
       playSadSound()
-      // Озвучиваем "Неверно, попробуй еще раз" на русском языке
-      speakText(message)
+      speakText('Попробуй ещё раз!')
       onFailure()
     }
-  }
+  }, [checkAnswer, onSuccess, onFailure, playHappySound, playSadSound, speakText])
 
   const nextQuestion = useCallback(() => {
     generateNewQuestion()
