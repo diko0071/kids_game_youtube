@@ -75,8 +75,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 - Web-based game that can be played on any device with a browser.
 
-## Contributing
-
-We welcome contributions from the community! If you're interested in helping develop new features, fix bugs, or improve the game, please check out our [contribution guidelines](#).
 
 
