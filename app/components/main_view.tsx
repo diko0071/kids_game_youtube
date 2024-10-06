@@ -127,15 +127,22 @@ export default function MainView() {
       () => <Game key="game" onComplete={handleGameComplete} />,
       () => <RussianAlphabetGame key="alphabet" onComplete={handleGameComplete} />,
       () => <GhostGame key="ghost" onComplete={handleGameComplete} />,
-    ]
-    
-    const shuffled = [...Array(numExercises)].map(() => 
-      gameComponents[Math.floor(Math.random() * gameComponents.length)]
-    )
+    ];
+
+    let lastIndex = -1;
+    const shuffled = [...Array(numExercises)].map(() => {
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * gameComponents.length);
+      } while (nextIndex === lastIndex);
+      lastIndex = nextIndex; // Update lastIndex here
+      return gameComponents[nextIndex];
+    });
+
     setGames(shuffled.map((Component, index) => 
       <Component key={index} />
-    ))
-  }
+    ));
+  };
 
   const handleGameComplete = () => {
     setCompletedGames(prev => {

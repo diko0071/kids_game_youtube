@@ -15,6 +15,8 @@ const praises = [
   'Так держать!'
 ]
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export function useGameLogic<T>(
   generateNewQuestion: () => void,
   checkAnswer: (answer: T) => boolean,
@@ -29,20 +31,26 @@ export function useGameLogic<T>(
 
   const getRandomPraise = () => praises[Math.floor(Math.random() * praises.length)]
 
-  const handleAnswer = useCallback((answer: T) => {
+  const handleAnswer = useCallback(async (answer: T) => {
     if (checkAnswer(answer)) {
-      setIsCorrect(true)
-      const praise = getRandomPraise()
-      setMessage(praise)
-      playHappySound()
-      speakText(praise)
-      onSuccess()
+      setIsCorrect(true);
+      const praise = getRandomPraise();
+      setMessage(praise);
+      playHappySound();
+      await sleep(500); // Пауза перед сообщением
+      await speakText(praise, 'ru-RU');
+      onSuccess();
     } else {
-      setIsCorrect(false)
-      setMessage('Попробуй ещё раз!')
-      playSadSound()
-      speakText('Попробуй ещё раз!')
-      onFailure()
+      setIsCorrect(false);
+
+
+      setMessage('Неверно. Попробуй ещё раз!');
+      playSadSound();
+
+      await sleep(50); // Пауза перед сообщением
+      await speakText('Неверно. Попробуй ещё раз!', 'ru-RU');
+
+      onFailure();
     }
   }, [checkAnswer, onSuccess, onFailure, playHappySound, playSadSound, speakText])
 

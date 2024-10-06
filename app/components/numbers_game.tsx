@@ -66,14 +66,16 @@ export default function NumbersGame({ onComplete }: NumbersGameProps) {
   const [options, setOptions] = useState<number[]>([])
   const [isIceCream, setIsIceCream] = useState(true)
 
-  const { speakText } = useSpeechSynthesis()
+  const { speakText } = useSpeechSynthesis();
 
-  const speakRussianAndEnglishNumber = useCallback((number: number, isIceCream: boolean) => {
-    const index = isIceCream ? number : number + 5
-    const russianText = russianNumbers[index]
-    const englishText = englishNumbers[index]
-    speakText(`${russianText}, ${englishText}`)
-  }, [speakText])
+  const speakRussianAndEnglishNumber = useCallback(async (number: number, isIceCream: boolean) => {
+    const index = isIceCream ? number : number + 5;
+    const russianText = russianNumbers[index];
+    const englishText = englishNumbers[index];
+
+    await speakText(russianText, 'ru-RU');
+    await speakText(englishText, 'en-US');
+  }, [speakText]);
 
   const generateNewQuestion = useCallback(() => {
     const count = Math.floor(Math.random() * 4) + 1

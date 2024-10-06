@@ -85,11 +85,16 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
     return answer === currentLetter
   }, [currentLetter])
 
-  const speakRussianAndEnglishWord = useCallback((letter: string) => {
-    const words = russianWords[letter as keyof typeof russianWords]
-    const randomWord = words[Math.floor(Math.random() * words.length)]
-    speakText(`${randomWord.russian}, ${randomWord.english}`)
-  }, [speakText])
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const speakRussianAndEnglishWord = useCallback(async (letter: string) => {
+    const words = russianWords[letter as keyof typeof russianWords];
+    const randomWord = words[Math.floor(Math.random() * words.length)];
+
+    await speakText(randomWord.russian);
+    await sleep(500); // Пауза в 500 миллисекунд
+    await speakText(randomWord.english);
+  }, [speakText]);
 
   const { isCorrect, message, handleAnswer, nextQuestion } = useGameLogic(
     generateNewQuestion,
@@ -102,9 +107,9 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
     generateNewQuestion()
   }, [generateNewQuestion])
 
-  const handleLetterClick = (letter: string) => {
-    speakRussianAndEnglishWord(letter)
-    handleAnswer(letter)
+  const handleLetterClick = async (letter: string) => {
+    await speakRussianAndEnglishWord(letter);
+    await handleAnswer(letter);
   }
 
   return (

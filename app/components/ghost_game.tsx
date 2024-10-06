@@ -43,6 +43,8 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
 
   const { speakText } = useSpeechSynthesis()
 
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
   const generateNewQuestion = useCallback(() => {
     const color = ghostColors[Math.floor(Math.random() * ghostColors.length)]
     setCurrentColor(color)
@@ -61,9 +63,11 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
     return answer.color === currentColor.color
   }, [currentColor])
 
-  const announceColor = useCallback((color: { name: string; englishName: string }) => {
-    speakText(`${color.name}, ${color.englishName}`)
-  }, [speakText])
+  const announceColor = useCallback(async (color: { name: string; englishName: string }) => {
+    await speakText(color.name);
+    await sleep(500); // Пауза в 500 миллисекунд
+    await speakText(color.englishName);
+  }, [speakText]);
 
   const { isCorrect, message, handleAnswer, nextQuestion } = useGameLogic(
     generateNewQuestion,
@@ -72,10 +76,10 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
     () => {} // No specific failure action
   )
 
-  const handleColorClick = useCallback((option: { color: string; name: string; englishName: string }) => {
-    announceColor(option)
-    handleAnswer(option)
-  }, [announceColor, handleAnswer])
+  const handleColorClick = useCallback(async (option: { color: string; name: string; englishName: string }) => {
+    await announceColor(option);
+    await handleAnswer(option);
+  }, [announceColor, handleAnswer]);
 
   useEffect(() => {
     generateNewQuestion()
