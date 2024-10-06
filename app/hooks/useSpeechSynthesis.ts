@@ -36,10 +36,6 @@ class SynthesizerManager {
         this.synthesizer.close();
         this.synthesizer = null;
       }
-
-      // Create a new synthesizer with the updated language and voice
-      console.log('AZURE_SUBSCRIPTION_KEY:', process.env.NEXT_PUBLIC_AZURE_SUBSCRIPTION_KEY);
-
       const subscriptionKey = process.env.NEXT_PUBLIC_AZURE_SUBSCRIPTION_KEY;
       if (!subscriptionKey) {
         throw new Error('AZURE_SUBSCRIPTION_KEY is not set');
