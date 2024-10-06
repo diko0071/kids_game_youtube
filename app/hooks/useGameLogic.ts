@@ -21,38 +21,62 @@ export function useGameLogic<T>(
   generateNewQuestion: () => void,
   checkAnswer: (answer: T) => boolean,
   onSuccess: () => void,
-  onFailure: () => void
+  onFailure: () => void,
+  options?: { customIncorrectSpeech?: { text: string; language: string }[] }
 ) {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
   const [message, setMessage] = useState('')
 
   const { playHappySound, playSadSound } = useGameAudio()
-  const { speakText } = useSpeechSynthesis()
+  const { speakText, speakTextsWithPauses } = useSpeechSynthesis()
 
   const getRandomPraise = () => praises[Math.floor(Math.random() * praises.length)]
 
-  const handleAnswer = useCallback(async (answer: T) => {
-    if (checkAnswer(answer)) {
-      setIsCorrect(true);
-      const praise = getRandomPraise();
-      setMessage(praise);
-      playHappySound();
-      await sleep(500); // Пауза перед сообщением
-      await speakText(praise, 'ru-RU');
-      onSuccess();
-    } else {
-      setIsCorrect(false);
+  const handleAnswer = useCallback(
+    async (answer: T) => {
+      if (checkAnswer(answer)) {
+        setIsCorrect(true);
+        const praise = getRandomPraise();
+        setMessage(praise);
+        playHappySound();
 
+        // Speak the praise with a pause
+        await speakTextsWithPauses([{ text: praise, language: 'ru-RU' }], 500);
 
-      setMessage('Неверно. Попробуй ещё раз!');
-      playSadSound();
+        onSuccess();
+      } else {
+        setIsCorrect(false);
+        setMessage('Неверно. Попробуй ещё раз!');
+        playSadSound();
 
-      await sleep(50); // Пауза перед сообщением
-      await speakText('Неверно. Попробуй ещё раз!', 'ru-RU');
+        if (options?.customIncorrectSpeech) {
+          // Use custom speech sequence
+          await speakTextsWithPauses(options.customIncorrectSpeech, 500);
+        } else {
+          // Default incorrect speech
+          await speakTextsWithPauses(
+            [
+              { text: 'Неверно', language: 'ru-RU' },
+              { text: 'Попробуй ещё раз!', language: 'ru-RU' },
+            ],
+            500
+          );
+        }
 
-      onFailure();
-    }
-  }, [checkAnswer, onSuccess, onFailure, playHappySound, playSadSound, speakText])
+        onFailure();
+      }
+    },
+    [
+      checkAnswer,
+      onSuccess,
+      onFailure,
+      playHappySound,
+      playSadSound,
+      speakTextsWithPauses,
+      getRandomPraise,
+      options,
+    ]
+  );
 
   const nextQuestion = useCallback(() => {
     generateNewQuestion()

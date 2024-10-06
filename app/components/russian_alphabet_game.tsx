@@ -65,7 +65,7 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
   const [currentLetter, setCurrentLetter] = useState('')
   const [options, setOptions] = useState<string[]>([])
 
-  const { speakText } = useSpeechSynthesis()
+  const { speakText, speakTextsWithPauses } = useSpeechSynthesis()
 
   const generateNewQuestion = useCallback(() => {
     const letter = russianLetters[Math.floor(Math.random() * russianLetters.length)]
@@ -91,10 +91,11 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
     const words = russianWords[letter as keyof typeof russianWords];
     const randomWord = words[Math.floor(Math.random() * words.length)];
 
-    await speakText(randomWord.russian);
-    await sleep(500); // Пауза в 500 миллисекунд
-    await speakText(randomWord.english);
-  }, [speakText]);
+    await speakTextsWithPauses([
+      { text: randomWord.russian, language: 'ru-RU' },
+      { text: randomWord.english, language: 'en-US' }
+    ], 500); // 500ms pause
+  }, [speakTextsWithPauses]);
 
   const { isCorrect, message, handleAnswer, nextQuestion } = useGameLogic(
     generateNewQuestion,

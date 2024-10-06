@@ -41,7 +41,7 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
   const [currentColor, setCurrentColor] = useState<{ color: string; name: string; englishName: string }>({ color: '', name: '', englishName: '' })
   const [options, setOptions] = useState<{ color: string; name: string; englishName: string }[]>([])
 
-  const { speakText } = useSpeechSynthesis()
+  const { speakText, speakTextsWithPauses } = useSpeechSynthesis()
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -64,19 +64,23 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
   }, [currentColor])
 
   const announceColor = useCallback(async (color: { name: string; englishName: string }) => {
-    await speakText(color.name);
-    await sleep(500); // Пауза в 500 миллисекунд
-    await speakText(color.englishName);
-  }, [speakText]);
+    await speakTextsWithPauses(
+      [
+        { text: color.name, language: 'ru-RU' },
+        { text: color.englishName, language: 'en-US' }
+      ],
+      500 // 500ms pause between messages
+    );
+  }, [speakTextsWithPauses]);
 
-  const { isCorrect, message, handleAnswer, nextQuestion } = useGameLogic(
+  const { isCorrect, message, handleAnswer } = useGameLogic(
     generateNewQuestion,
     checkAnswer,
     onComplete,
     () => {} // No specific failure action
   )
 
-  const handleColorClick = useCallback(async (option: { color: string; name: string; englishName: string }) => {
+  const handleOptionClick = useCallback(async (option: { color: string; name: string; englishName: string }) => {
     await announceColor(option);
     await handleAnswer(option);
   }, [announceColor, handleAnswer]);
@@ -94,7 +98,7 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
         {options.map((option) => (
           <Button
             key={option.color}
-            onClick={() => handleColorClick(option)}
+            onClick={() => handleOptionClick(option)}
             className="w-16 h-16 rounded-full"
             style={{ backgroundColor: option.color }}
           />

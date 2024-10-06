@@ -66,16 +66,21 @@ export default function NumbersGame({ onComplete }: NumbersGameProps) {
   const [options, setOptions] = useState<number[]>([])
   const [isIceCream, setIsIceCream] = useState(true)
 
-  const { speakText } = useSpeechSynthesis();
+  const { speakTextsWithPauses } = useSpeechSynthesis();
 
   const speakRussianAndEnglishNumber = useCallback(async (number: number, isIceCream: boolean) => {
     const index = isIceCream ? number : number + 5;
     const russianText = russianNumbers[index];
     const englishText = englishNumbers[index];
 
-    await speakText(russianText, 'ru-RU');
-    await speakText(englishText, 'en-US');
-  }, [speakText]);
+    await speakTextsWithPauses(
+      [
+        { text: russianText, language: 'ru-RU' },
+        { text: englishText, language: 'en-US' }
+      ],
+      500
+    );
+  }, [speakTextsWithPauses]);
 
   const generateNewQuestion = useCallback(() => {
     const count = Math.floor(Math.random() * 4) + 1
@@ -107,10 +112,13 @@ export default function NumbersGame({ onComplete }: NumbersGameProps) {
     generateNewQuestion()
   }, [generateNewQuestion])
 
-  const handleOptionClick = (option: number) => {
-    speakRussianAndEnglishNumber(option, isIceCream)
-    handleAnswer(option)
-  }
+  const handleOptionClick = useCallback(async (option: number) => {
+    // Speak the Russian and English phrases first
+    await speakRussianAndEnglishNumber(option, isIceCream);
+
+    // Handle the answer (this will trigger the appropriate sound and update the game state)
+    await handleAnswer(option);
+  }, [handleAnswer, isIceCream, speakRussianAndEnglishNumber]);
 
   const DessertComponent = isIceCream ? IceCream : Cake
   const dessertColors = isIceCream ? iceCreamColors : cakeColors

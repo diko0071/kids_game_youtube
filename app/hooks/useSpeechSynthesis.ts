@@ -38,8 +38,15 @@ class SynthesizerManager {
       }
 
       // Create a new synthesizer with the updated language and voice
+      console.log('AZURE_SUBSCRIPTION_KEY:', process.env.NEXT_PUBLIC_AZURE_SUBSCRIPTION_KEY);
+
+      const subscriptionKey = process.env.NEXT_PUBLIC_AZURE_SUBSCRIPTION_KEY;
+      if (!subscriptionKey) {
+        throw new Error('AZURE_SUBSCRIPTION_KEY is not set');
+      }
+
       const speechConfig = speechsdk.SpeechConfig.fromSubscription(
-        'ef29e73374a24580a0bb1338acedcba3',
+        subscriptionKey,
         'eastus'
   
       );
@@ -103,6 +110,25 @@ class SynthesizerManager {
       this.synthesizer = null;
     }
   }
+
+  // New method to speak multiple texts with pauses
+  public async speakTextsWithPauses(
+    texts: { text: string; language: string }[],
+    pauseDuration: number = 500 // Default pause of 500ms
+  ): Promise<void> {
+    for (let i = 0; i < texts.length; i++) {
+      const { text, language } = texts[i];
+      await this.speak(text, language);
+      if (i < texts.length - 1) {
+        await this.sleep(pauseDuration);
+      }
+    }
+  }
+
+  // Helper method for sleep
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 }
 
 const synthesizerManager = new SynthesizerManager();
@@ -119,5 +145,13 @@ export function useSpeechSynthesis() {
     return synthesizerManager.speak(text, language);
   }, []);
 
-  return { speakText };
+  // Expose the new method
+  const speakTextsWithPauses = useCallback(
+    (texts: { text: string; language: string }[], pauseDuration?: number): Promise<void> => {
+      return synthesizerManager.speakTextsWithPauses(texts, pauseDuration);
+    },
+    []
+  );
+
+  return { speakText, speakTextsWithPauses };
 }
