@@ -12,17 +12,19 @@ interface ExerciseSettingsProps {
     numExercises: number;
     frequency: number;
     controls: number;
-    onSave: (numExercises: number, frequency: number, controls: number) => void;
+    debugMode: boolean;
+    onSave: (numExercises: number, frequency: number, controls: number, debugMode: boolean) => void;
     onClose: () => void;
   }
 
-export default function ExerciseSettings({ numExercises = 5, frequency = 3, controls = 1, onSave, onClose }: ExerciseSettingsProps) {
+export default function ExerciseSettings({ numExercises = 5, frequency = 3, controls = 1, debugMode = false, onSave, onClose }: ExerciseSettingsProps) {
     const [localNumExercises, setLocalNumExercises] = useState(numExercises)
     const [localFrequency, setLocalFrequency] = useState(frequency)
     const [localControls, setLocalControls] = useState(controls)
+    const [localDebugMode, setLocalDebugMode] = useState(debugMode)
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
-      onSave(localNumExercises, localFrequency, localControls)
+      onSave(localNumExercises, localFrequency, localControls, localDebugMode)
       toast.success(`Settings saved successfully.`, {
         action: {
             label: "Hide",
@@ -65,6 +67,14 @@ export default function ExerciseSettings({ numExercises = 5, frequency = 3, cont
               onCheckedChange={(checked) => setLocalControls(checked ? 1 : 0)}
             />
             <Label htmlFor="controls">Show YouTube controls (player options)</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="debugMode"
+              checked={localDebugMode}
+              onCheckedChange={(checked) => setLocalDebugMode(checked as boolean)}
+            />
+            <Label htmlFor="debugMode">Debug Mode</Label>
           </div>
         </CardContent>
         <CardFooter>

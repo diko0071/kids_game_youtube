@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import ExerciseSettings from './settings_view'
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { Play, Pause, Volume2, Edit, Settings, Video, Github, Maximize, Minimize } from "lucide-react"
+import { Play, Pause, Volume2, Edit, Settings, Video, Github, Maximize, Minimize, PlayCircle } from "lucide-react"
 import Game from './numbers_game'
 import RussianAlphabetGame from './russian_alphabet_game'
 import ContentView from './content_view'
@@ -41,6 +41,7 @@ export default function MainView() {
   const [showContentView, setShowContentView] = useState(false)
   const [isYouTubeApiReady, setIsYouTubeApiReady] = useState(false);
   const [currentVideoTime, setCurrentVideoTime] = useState<number>(0);
+  const [debugMode, setDebugMode] = useState(false)
   const [content, setContent] = useState({ 
     videoUrl: '', 
     playlistId: 'PLRTB5A-krdflIE9SQt_2af1jbSxaomqTU' 
@@ -122,19 +123,38 @@ export default function MainView() {
     }
   }, [isPlaying, frequency, isGenerating, isExercising, lastExerciseTime]) 
 
+  const [lastGameIndex, setLastGameIndex] = useState<number | null>(null);
+
   const generateRandomGames = () => {
     const gameComponents = [
       () => <Game key="game" onComplete={handleGameComplete} />,
       () => <RussianAlphabetGame key="alphabet" onComplete={handleGameComplete} />,
       () => <GhostGame key="ghost" onComplete={handleGameComplete} />,
-    ]
+    ];
     
-    const shuffled = [...Array(numExercises)].map(() => 
-      gameComponents[Math.floor(Math.random() * gameComponents.length)]
-    )
+    let availableIndices = gameComponents.map((_, index) => index);
+    const shuffled = [];
+  
+    for (let i = 0; i < numExercises; i++) {
+      if (availableIndices.length === 0) {
+        availableIndices = gameComponents.map((_, index) => index);
+        if (lastGameIndex !== null) {
+          availableIndices = availableIndices.filter(index => index !== lastGameIndex);
+        }
+      }
+  
+      const randomIndex = Math.floor(Math.random() * availableIndices.length);
+      const chosenIndex = availableIndices[randomIndex];
+  
+      availableIndices.splice(randomIndex, 1);
+  
+      shuffled.push(gameComponents[chosenIndex]);
+      setLastGameIndex(chosenIndex);
+    }
+    
     setGames(shuffled.map((Component, index) => 
       <Component key={index} />
-    ))
+    ));
   }
 
   const handleGameComplete = () => {
@@ -248,7 +268,7 @@ export default function MainView() {
     return (match && match[2].length === 11) ? match[2] : null
   }
 
-  const handleSaveSettings = (newNumExercises: number, newFrequency: number, newControls: number) => {
+  const handleSaveSettings = (newNumExercises: number, newFrequency: number, newControls: number, newDebugMode: boolean) => {
     if (playerRef.current) {
       setCurrentVideoTime(playerRef.current.getCurrentTime());
     }
@@ -259,7 +279,8 @@ export default function MainView() {
       controls: newControls,
       currentVideoTime: currentVideoTime,
       currentVideoId: currentVideoId,
-      content: content
+      content: content,
+      debugMode: newDebugMode
     }));
 
     window.location.reload();
@@ -275,6 +296,7 @@ export default function MainView() {
       setCurrentVideoTime(parsedSettings.currentVideoTime);
       setCurrentVideoId(parsedSettings.currentVideoId);
       setContent(parsedSettings.content);
+      setDebugMode(parsedSettings.debugMode);
     }
   }, []);
 
@@ -429,7 +451,15 @@ export default function MainView() {
           <div id="youtube-player" className="absolute inset-0"></div>
         </div>
         <div className="p-4 sm:p-6 space-y-4">
-          <div className="flex justify-end items-center">
+          <div className="flex justify-between items-center"> 
+            <div>
+              {debugMode && (
+                <Button variant="outline" size="sm" onClick={handleExercise}>
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  Start Exercises
+                </Button>
+              )}
+            </div>
             <div className="flex space-x-2">
               <Dialog open={showSettings} onOpenChange={setShowSettings}>
                 <DialogTrigger asChild>
@@ -446,6 +476,7 @@ export default function MainView() {
                     numExercises={numExercises} 
                     frequency={frequency} 
                     controls={controls}
+                    debugMode={debugMode}
                     onSave={handleSaveSettings}
                   />
                 </DialogContent>
