@@ -64,3 +64,4 @@ export default function ContentView({ content, onSave, onClose }: ContentViewPro
     </div>
   )
 }
+

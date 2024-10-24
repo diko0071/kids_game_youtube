@@ -6,11 +6,22 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import ExerciseSettings from './settings_view'
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { Play, Pause, Volume2, Edit, Settings, Video, Github, Maximize, Minimize, PlayCircle } from "lucide-react"
+import { Play, Pause, Volume2, Edit, Settings, Video, Github, Maximize, Minimize, PlayCircle, List, Loader2 } from "lucide-react"
 import Game from './numbers_game'
 import RussianAlphabetGame from './russian_alphabet_game'
 import ContentView from './content_view'
 import { DialogGame, DialogGameContent, DialogGameTitle, DialogGameDescription, DialogGameTrigger, DialogGameFooter } from '@/components/ui/dialog_game'
+import { Card, CardContent } from "@/components/ui/card"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useRouter, useSearchParams } from 'next/navigation'
+
+const PLAYLISTS = [
+  { id: 'PLGwsVJEZNfQX8Q-0FP9IkV92nyJ7rEeb2', name: 'LIVE! Клео и Кукин' },
+  { id: 'PLGwsVJEZNfQXoCEMzvRsV0CzOE21WzuLj', name: 'Хэллоуин с Клео и Кукином!' },
+  { id: 'PLqyDar58v02Ees2Ix7k8rtKtJMV862q85', name: 'Тима и Тома! Все серии!' },
+  { id: 'PLBCl59ugxrPso934cq1I8QKiqqoKeXW_U', name: 'Сказочный патруль Все серии подряд' },
+  { id: 'PL8o0bgEaIz4WLKLMS86ocbPfAYLe9Hzuj', name: 'Детские развлекательные мультики' },
+];
 
 declare global {
   interface Window {
@@ -49,7 +60,11 @@ export default function MainView() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const fullscreenAttemptRef = useRef<number | null>(null);
   const wasFullScreenRef = useRef(false);
-
+  const [currentPlaylistId, setCurrentPlaylistId] = useState<string>('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isYouTubeApiReady) {
@@ -75,7 +90,7 @@ export default function MainView() {
           playerRef.current.loadVideoById(videoId)
         }
       } else {
-        initializeYouTubePlayer(videoId, newContent.playlistId)
+        initializeYouTubePlayer(newContent.playlistId)
       }
     } else if (newContent.playlistId) {
       if (playerRef.current) {
@@ -86,7 +101,7 @@ export default function MainView() {
           startSeconds: 0
         })
       } else {
-        initializeYouTubePlayer(null, newContent.playlistId)
+        initializeYouTubePlayer(newContent.playlistId)
       }
     }
   }
@@ -95,7 +110,7 @@ export default function MainView() {
     if (!playerRef.current || isGenerating || isExercising) return
 
     const currentTime = Math.floor(playerRef.current.getCurrentTime())
-    const timeSinceLastExercise = currentTime - lastExerciseTime
+    const timeSinceLastExercise = Math.abs(currentTime - lastExerciseTime);
     
     console.log(`Current time: ${currentTime}, Last exercise time: ${lastExerciseTime}, Time since last exercise: ${timeSinceLastExercise}, Frequency: ${frequency * 60}`)
     
@@ -301,21 +316,20 @@ export default function MainView() {
   }, []);
 
 
-  const initializeYouTubePlayer = (videoId: string | null, playlistId?: string) => {
+  const initializeYouTubePlayer = (playlistId: string) => {
     if (typeof window !== 'undefined' && window.YT) {
+      setIsLoading(true);
       new window.YT.Player('youtube-player', {
         height: '100%',
         width: '100%',
-        videoId: videoId || undefined,
         playerVars: {
           allowfullscreen: 1,
-          listType: playlistId ? 'playlist' : undefined,
-          list: playlistId || undefined,
+          listType: 'playlist',
+          list: playlistId,
           loop: 1,
           rel: 0,
           controls: controls,
           modestbranding: 0,
-          start: Math.floor(currentVideoTime),
           iv_load_policy: 3,
           showinfo: 0,
         },
@@ -324,6 +338,13 @@ export default function MainView() {
             playerRef.current = event.target;
             playerRef.current.setVolume(volume);
             addCustomOverlay();
+            setIsLoading(false);
+            playerRef.current.loadPlaylist({
+              listType: 'playlist',
+              list: playlistId,
+              index: 0,
+              startSeconds: 0
+            });
           },
           onStateChange: (event: any) => {
             setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
@@ -346,10 +367,9 @@ export default function MainView() {
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
 
     window.onYouTubeIframeAPIReady = () => {
-      setIsYouTubeApiReady(true);
-      if (currentVideoId) {
-        initializeYouTubePlayer(currentVideoId)
-      }
+      const savedPlaylistId = localStorage.getItem('currentPlaylistId');
+      const playlistId = searchParams.get('playlist') || savedPlaylistId || PLAYLISTS[0].id;
+      initializeYouTubePlayer(playlistId);
     }
 
     return () => {
@@ -366,7 +386,7 @@ export default function MainView() {
       if (playerRef.current) {
         playerRef.current.loadVideoById(videoId)
       } else {
-        initializeYouTubePlayer(videoId)
+        initializeYouTubePlayer(content.playlistId)
       }
     }
   }, [])
@@ -396,7 +416,7 @@ export default function MainView() {
           }
         }
       });
-  
+    
       playerContainerRef.current.appendChild(overlay);
     }
   }
@@ -444,61 +464,143 @@ export default function MainView() {
     };
   }, []); 
 
+  useEffect(() => {
+    const savedPlaylistId = localStorage.getItem('currentPlaylistId');
+    const playlistId = searchParams.get('playlist') || savedPlaylistId || getRandomPlaylistId();
+    setCurrentPlaylistId(playlistId);
+    initializeYouTubePlayer(playlistId);
+
+    // Если URL не содержит playlist, добавляем его
+    if (!searchParams.get('playlist')) {
+      router.push(`?playlist=${playlistId}`, { scroll: false });
+    }
+
+    // Сохраняем текущий плейлист в localStorage
+    localStorage.setItem('currentPlaylistId', playlistId);
+  }, [searchParams]);
+
+  const getRandomPlaylistId = () => {
+    const randomIndex = Math.floor(Math.random() * PLAYLISTS.length);
+    return PLAYLISTS[randomIndex].id;
+  };
+
+  const handlePlaylistSelect = (playlistId: string) => {
+    // Update the URL with the new playlist ID and reload the page
+    window.location.href = `?playlist=${playlistId}`;
+  };
+
+  const resetPlayerState = () => {
+    setIsExercising(false);
+    setIsDialogOpen(false);
+    setCurrentGameIndex(0);
+    setCompletedGames(0);
+    setLastExerciseTime(0);
+    setGames([]);
+    setIsPlaying(false);
+  };
+
+  useEffect(() => {
+    if (currentPlaylistId) {
+      if (playerRef.current) {
+        playerRef.current.loadPlaylist({
+          listType: 'playlist',
+          list: currentPlaylistId,
+          index: 0,
+          startSeconds: 0,
+        });
+      } else {
+        initializeYouTubePlayer(currentPlaylistId);
+      }
+      localStorage.setItem('currentPlaylistId', currentPlaylistId);
+    }
+  }, [currentPlaylistId]);
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8 flex flex-col items-center">
-      <div className="w-[90%] max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="aspect-video bg-gray-200 relative" ref={playerContainerRef}>
-          <div id="youtube-player" className="absolute inset-0"></div>
+      <div className="w-[90%] max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden flex">
+        <div className="w-4/5">
+          <div className="aspect-video bg-gray-200 relative" ref={playerContainerRef}>
+            <div id="youtube-player" className="absolute inset-0"></div>
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                <Loader2 className="w-12 h-12 text-white animate-spin" />
+              </div>
+            )}
+          </div>
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="flex justify-between items-center"> 
+              <div>
+                {debugMode && (
+                  <Button variant="outline" size="sm" onClick={handleExercise}>
+                    <PlayCircle className="h-4 w-4 mr-2" />
+                    Start Exercises
+                  </Button>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <Dialog open={showSettings} onOpenChange={setShowSettings}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogTitle>Settings</DialogTitle>
+                    <DialogDescription>Configure your video exercise routine</DialogDescription>
+                    <ExerciseSettings 
+                      onClose={() => setShowSettings(false)} 
+                      numExercises={numExercises} 
+                      frequency={frequency} 
+                      controls={controls}
+                      debugMode={debugMode}
+                      onSave={handleSaveSettings}
+                    />
+                  </DialogContent>
+                </Dialog>
+                <Dialog open={showContentView} onOpenChange={setShowContentView}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Video className="h-4 w-4 mr-2" />
+                      Content
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogTitle>Content URLs</DialogTitle>
+                    <DialogDescription>Enter a video URL or a playlist ID</DialogDescription>
+                    <ContentView 
+                      onClose={() => setShowContentView(false)} 
+                      content={content} 
+                      onSave={handleSaveContent}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="p-4 sm:p-6 space-y-4">
-          <div className="flex justify-between items-center"> 
-            <div>
-              {debugMode && (
-                <Button variant="outline" size="sm" onClick={handleExercise}>
-                  <PlayCircle className="h-4 w-4 mr-2" />
-                  Start Exercises
-                </Button>
-              )}
-            </div>
-            <div className="flex space-x-2">
-              <Dialog open={showSettings} onOpenChange={setShowSettings}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogTitle>Settings</DialogTitle>
-                  <DialogDescription>Configure your video exercise routine</DialogDescription>
-                  <ExerciseSettings 
-                    onClose={() => setShowSettings(false)} 
-                    numExercises={numExercises} 
-                    frequency={frequency} 
-                    controls={controls}
-                    debugMode={debugMode}
-                    onSave={handleSaveSettings}
-                  />
-                </DialogContent>
-              </Dialog>
-              <Dialog open={showContentView} onOpenChange={setShowContentView}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Video className="h-4 w-4 mr-2" />
-                    Content
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogTitle>Content URLs</DialogTitle>
-                  <DialogDescription>Enter a video URL or a playlist ID</DialogDescription>
-                  <ContentView 
-                    onClose={() => setShowContentView(false)} 
-                    content={content} 
-                    onSave={handleSaveContent}
-                  />
-                </DialogContent>
-              </Dialog>
-            </div>
+        <div className="w-1/5 border-l">
+          <div className="w-full h-full p-2">
+            <ScrollArea className="h-full w-full rounded-md border overflow-hidden">
+              <div className="p-2">
+                {PLAYLISTS.map((playlist) => (
+                  <Card 
+                    key={playlist.id} 
+                    className={`mb-2 last:mb-0 cursor-pointer hover:bg-gray-100 ${playlist.id === currentPlaylistId ? 'bg-blue-100' : ''}`}
+                    onClick={() => handlePlaylistSelect(playlist.id)}
+                  >
+                    <CardContent className="p-2 flex items-center space-x-2">
+                      <List className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xs font-medium truncate" title={playlist.name}>
+                          {playlist.name}
+                        </h3>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         </div>
       </div>
