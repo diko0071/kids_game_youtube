@@ -58,7 +58,7 @@ export function useGameLogic<T>(
           speakText(praise, language).then(() => {
             onSuccess();
           });
-        }, 1000);
+        }, 1350);
       });
     } else {
       setIsCorrect(false);
@@ -70,7 +70,7 @@ export function useGameLogic<T>(
           speakText(tryAgainMessage, language).then(() => {
             onFailure();
           });
-        }, 1000);
+        }, 1350);
       });
     }
   }, [checkAnswer, onSuccess, onFailure, playHappySound, playSadSound, speakText, language]);

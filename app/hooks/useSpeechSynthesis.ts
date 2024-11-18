@@ -5,7 +5,7 @@ export function useSpeechSynthesis() {
   const speakText = useCallback((text: string, lang: string = 'ru-RU'): Promise<void> => {
     return new Promise((resolve, reject) => {
       const speechConfig = speechsdk.SpeechConfig.fromSubscription(process.env.NEXT_PUBLIC_AZURE_SUBSCRIPTION_KEY!, "eastus");
-      speechConfig.speechSynthesisVoiceName = lang === 'ru-RU' ? "ru-RU-SvetlanaNeural" : "en-US-JennyNeural";
+      speechConfig.speechSynthesisVoiceName = lang === 'ru-RU' ? "zh-CN-XiaochenMultilingualNeural" : "zh-CN-XiaochenMultilingualNeural";
       const synthesizer = new speechsdk.SpeechSynthesizer(speechConfig);
 
       synthesizer.speakTextAsync(
