@@ -1,10 +1,9 @@
-import Image from "next/image";
-import MainView from "./components/main_view";
 import { Suspense } from "react";
+import GameWrapper from "@/app/components/GameWrapper.tsx";
 export default function Home() {
   return (
     <Suspense fallback={<div>Loading playlist and video...</div>}>
-      <MainView />
+      <GameWrapper />
     </Suspense>
   )
 }

@@ -47,25 +47,33 @@ export function useGameLogic<T>(
     return praiseList[Math.floor(Math.random() * praiseList.length)]
   }
 
-  const handleAnswer = useCallback(async (answer: T) => {
+  const handleAnswer = useCallback((answer: T) => {
     if (checkAnswer(answer)) {
-      setIsCorrect(true)
-      const praise = getRandomPraise()
-      setMessage(praise)
-      await playHappySound()
-      await sleep(1000)
-      await speakText(praise, language)
-      onSuccess()
+      setIsCorrect(true);
+      const praise = getRandomPraise();
+      setMessage(praise);
+
+      playHappySound().then(() => {
+        setTimeout(() => {
+          speakText(praise, language).then(() => {
+            onSuccess();
+          });
+        }, 1000);
+      });
     } else {
-      setIsCorrect(false)
+      setIsCorrect(false);
       const tryAgainMessage = language === 'ru-RU' ? 'Попробуй ещё раз!' : 'Try again!';
-      setMessage(tryAgainMessage)
-      await playSadSound()
-      await sleep(1000)
-      await speakText(tryAgainMessage, language)
-      onFailure()
+      setMessage(tryAgainMessage);
+
+      playSadSound().then(() => {
+        setTimeout(() => {
+          speakText(tryAgainMessage, language).then(() => {
+            onFailure();
+          });
+        }, 1000);
+      });
     }
-  }, [checkAnswer, onSuccess, onFailure, playHappySound, playSadSound, speakText, language])
+  }, [checkAnswer, onSuccess, onFailure, playHappySound, playSadSound, speakText, language]);
 
   const nextQuestion = useCallback(() => {
     generateNewQuestion()
