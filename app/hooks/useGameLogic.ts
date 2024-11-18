@@ -48,6 +48,7 @@ export function useGameLogic<T>(
   }
 
   const handleAnswer = useCallback((answer: T) => {
+
     if (checkAnswer(answer)) {
       setIsCorrect(true);
       const praise = getRandomPraise();
@@ -58,7 +59,7 @@ export function useGameLogic<T>(
           speakText(praise, language).then(() => {
             onSuccess();
           });
-        }, 1000);
+        }, 1350);
       });
     } else {
       setIsCorrect(false);
@@ -70,7 +71,7 @@ export function useGameLogic<T>(
           speakText(tryAgainMessage, language).then(() => {
             onFailure();
           });
-        }, 1000);
+        }, 1350);
       });
     }
   }, [checkAnswer, onSuccess, onFailure, playHappySound, playSadSound, speakText, language]);
