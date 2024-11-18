@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useRouter, useSearchParams } from 'next/navigation'
 import {extractVideoId, getRandomVideoId, handleVideoSelect} from "@/app/components/GameWrapper.tsx/utils";
 import {VIDEOS} from "@/app/components/GameWrapper.tsx/constants";
+import WordMatchingGame from "@/app/components/WordMatchingGame";
 
 declare global {
     interface Window {
@@ -88,6 +89,7 @@ export default function GameWrapper() {
             () => <NumbersGame key="game" onComplete={handleGameComplete} />,
             () => <RussianAlphabetGame key="alphabet" onComplete={handleGameComplete} />,
             () => <GhostGame key="ghost" onComplete={handleGameComplete} />,
+            () => <WordMatchingGame key="word-matching" onComplete={handleGameComplete} />,
         ];
 
         let availableIndices = gameComponents.map((_, index) => index);
