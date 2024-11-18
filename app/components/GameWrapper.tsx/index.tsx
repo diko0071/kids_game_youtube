@@ -12,8 +12,8 @@ import { DialogGame, DialogGameContent, DialogGameTitle, DialogGameDescription, 
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useRouter, useSearchParams } from 'next/navigation'
-import {extractVideoId, getRandomPlaylistId, handlePlaylistSelect} from "@/app/components/GameWrapper.tsx/utils";
-import {PLAYLISTS} from "@/app/components/GameWrapper.tsx/constants";
+import {extractVideoId, getRandomVideoId, handleVideoSelect} from "@/app/components/GameWrapper.tsx/utils";
+import {VIDEOS} from "@/app/components/GameWrapper.tsx/constants";
 
 declare global {
     interface Window {
@@ -22,7 +22,6 @@ declare global {
     }
 }
 export default function GameWrapper() {
-    const [currentVideoId, setCurrentVideoId] = useState<string>("")
     const [isPlaying, setIsPlaying] = useState<boolean>(false)
     const [volume, setVolume] = useState<number>(50)
     const playerRef = useRef<any>(null)
@@ -38,56 +37,37 @@ export default function GameWrapper() {
     const [currentGameIndex, setCurrentGameIndex] = useState(0)
     const [games, setGames] = useState<JSX.Element[]>([])
     const [showContentView, setShowContentView] = useState(false)
-    const [isYouTubeApiReady, setIsYouTubeApiReady] = useState(false);
-    const [currentVideoTime, setCurrentVideoTime] = useState<number>(0);
+    const [isYouTubeApiReady, setIsYouTubeApiReady] = useState(false)
+    const [currentVideoTime, setCurrentVideoTime] = useState<number>(0)
     const [debugMode, setDebugMode] = useState(false)
-    const [currentPlaylistId, setCurrentPlaylistId] = useState<string>('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [lastGameIndex, setLastGameIndex] = useState<number | null>(null);
+    const [currentVideoId, setCurrentVideoId] = useState<string>('')
+    const [isLoading, setIsLoading] = useState(false)
+    const [lastGameIndex, setLastGameIndex] = useState<number | null>(null)
     const [content, setContent] = useState({
         videoUrl: '',
-        playlistId: 'PLRTB5A-krdflIE9SQt_2af1jbSxaomqTU'
+        videoId: VIDEOS[0].id
     })
 
-    const fullscreenAttemptRef = useRef<number | null>(null);
-    const wasFullScreenRef = useRef(false);
-    const playerContainerRef = useRef<HTMLDivElement>(null);
+    const fullscreenAttemptRef = useRef<number | null>(null)
+    const wasFullScreenRef = useRef(false)
+    const playerContainerRef = useRef<HTMLDivElement>(null)
 
-    const router = useRouter();
-    const searchParams = useSearchParams();
+    const router = useRouter()
+    const searchParams = useSearchParams()
 
-    const handleSaveContent = (newContent: { videoUrl: string; playlistId: string }) => {
+    const handleSaveContent = (newContent: { videoUrl: string; videoId: string }) => {
         setContent(newContent)
-        const videoId = extractVideoId(newContent.videoUrl)
+        const videoId = extractVideoId(newContent.videoUrl) || newContent.videoId
         if (videoId) {
             setCurrentVideoId(videoId)
             if (playerRef.current) {
-                if (newContent.playlistId) {
-                    playerRef.current.loadPlaylist({
-                        listType: 'playlist',
-                        list: newContent.playlistId,
-                        index: 0,
-                        startSeconds: 0
-                    })
-                } else {
-                    playerRef.current.loadVideoById(videoId)
-                }
+                playerRef.current.loadVideoById(videoId)
             } else {
-                initializeYouTubePlayer(newContent.playlistId)
-            }
-        } else if (newContent.playlistId) {
-            if (playerRef.current) {
-                playerRef.current.loadPlaylist({
-                    listType: 'playlist',
-                    list: newContent.playlistId,
-                    index: 0,
-                    startSeconds: 0
-                })
-            } else {
-                initializeYouTubePlayer(newContent.playlistId)
+                initializeYouTubePlayer(videoId)
             }
         }
     }
+
     const checkExerciseTime = () => {
         if (!playerRef.current || isExercising) return
 
@@ -102,6 +82,7 @@ export default function GameWrapper() {
             setLastExerciseTime(currentTime)
         }
     }
+
     const generateRandomGames = () => {
         const gameComponents = [
             () => <NumbersGame key="game" onComplete={handleGameComplete} />,
@@ -133,6 +114,7 @@ export default function GameWrapper() {
             <Component key={index} />
         ));
     }
+
     const handleGameComplete = () => {
         setCompletedGames(prev => {
             const newCompletedGames = prev + 1;
@@ -152,6 +134,7 @@ export default function GameWrapper() {
             return newCompletedGames;
         });
     };
+
     const handleExercise = () => {
         if (!playerRef.current) return;
         playerRef.current.pauseVideo();
@@ -182,6 +165,7 @@ export default function GameWrapper() {
         setCompletedGames(0);
         generateRandomGames();
     }
+
     const resetExercise = () => {
         console.log('resetExercise: Starting reset');
         setIsExercising(false);
@@ -226,6 +210,7 @@ export default function GameWrapper() {
             }
         }
     };
+
     const handleSaveSettings = (newNumExercises: number, newFrequency: number, newControls: number, newDebugMode: boolean) => {
         if (playerRef.current) {
             setCurrentVideoTime(playerRef.current.getCurrentTime());
@@ -243,6 +228,7 @@ export default function GameWrapper() {
 
         window.location.reload();
     }
+
     const addCustomOverlay = () => {
         if (playerContainerRef.current) {
             const overlay = document.createElement('div');
@@ -272,17 +258,16 @@ export default function GameWrapper() {
             playerContainerRef.current.appendChild(overlay);
         }
     }
-    const initializeYouTubePlayer = (playlistId: string) => {
+
+    const initializeYouTubePlayer = (videoId: string) => {
         if (typeof window !== 'undefined' && window.YT) {
             setIsLoading(true);
             new window.YT.Player('youtube-player', {
                 height: '100%',
                 width: '100%',
+                videoId: videoId,
                 playerVars: {
                     allowfullscreen: 1,
-                    listType: 'playlist',
-                    list: playlistId,
-                    loop: 1,
                     rel: 0,
                     controls: controls,
                     modestbranding: 0,
@@ -295,20 +280,17 @@ export default function GameWrapper() {
                         playerRef.current.setVolume(volume);
                         addCustomOverlay();
                         setIsLoading(false);
-                        playerRef.current.loadPlaylist({
-                            listType: 'playlist',
-                            list: playlistId,
-                            index: 0,
-                            startSeconds: 0
-                        });
+                        playerRef.current.playVideo();
                     },
                     onStateChange: (event: any) => {
                         setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
                     },
                     onError: (event: any) => {
                         console.error('YouTube player error:', event.data);
-                        if (playerRef.current) {
-                            playerRef.current.nextVideo();
+                        const nextVideo = getRandomVideoId();
+                        if (nextVideo) {
+                            setCurrentVideoId(nextVideo);
+                            playerRef.current?.loadVideoById(nextVideo);
                         }
                     }
                 },
@@ -358,20 +340,12 @@ export default function GameWrapper() {
         firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
 
         window.onYouTubeIframeAPIReady = () => {
-            const savedPlaylistId = localStorage.getItem('currentPlaylistId');
-            const playlistId = searchParams.get('playlist') || savedPlaylistId || PLAYLISTS[0].id;
-            initializeYouTubePlayer(playlistId);
+            const savedVideoId = localStorage.getItem('currentVideoId')
+            const videoId = searchParams.get('video') || savedVideoId || VIDEOS[0].id
+            setCurrentVideoId(videoId)
+            initializeYouTubePlayer(videoId)
         }
 
-        const videoId = extractVideoId(content.videoUrl)
-        if (videoId) {
-            setCurrentVideoId(videoId)
-            if (playerRef.current) {
-                playerRef.current.loadVideoById(videoId)
-            } else {
-                initializeYouTubePlayer(content.playlistId)
-            }
-        }
         const preventNavigation = (event: MouseEvent | TouchEvent) => {
             const target = event.target as HTMLElement;
             if (target.tagName === 'A' && target.getAttribute('href')) {
@@ -414,37 +388,19 @@ export default function GameWrapper() {
 
             window.removeEventListener('beforeunload', preventBeforeUnload);
         }
-
     }, []);
 
     useEffect(() => {
-        const savedPlaylistId = localStorage.getItem('currentPlaylistId');
-        const playlistId = searchParams.get('playlist') || savedPlaylistId || getRandomPlaylistId();
-        setCurrentPlaylistId(playlistId);
-        initializeYouTubePlayer(playlistId);
-
-        if (!searchParams.get('playlist')) {
-            router.push(`?playlist=${playlistId}`, { scroll: false });
+        const savedVideoId = localStorage.getItem('currentVideoId')
+        const videoId = searchParams.get('video') || savedVideoId || getRandomVideoId()
+        setCurrentVideoId(videoId)
+        
+        if (!searchParams.get('video')) {
+            router.push(`?video=${videoId}`, { scroll: false })
         }
 
-        localStorage.setItem('currentPlaylistId', playlistId);
-    }, [searchParams]);
-
-    useEffect(() => {
-        if (currentPlaylistId) {
-            if (playerRef.current) {
-                playerRef.current.loadPlaylist({
-                    listType: 'playlist',
-                    list: currentPlaylistId,
-                    index: 0,
-                    startSeconds: 0,
-                });
-            } else {
-                initializeYouTubePlayer(currentPlaylistId);
-            }
-            localStorage.setItem('currentPlaylistId', currentPlaylistId);
-        }
-    }, [currentPlaylistId]);
+        localStorage.setItem('currentVideoId', videoId)
+    }, [searchParams])
 
     return (
         <div className="min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8 flex flex-col items-center">
@@ -452,8 +408,7 @@ export default function GameWrapper() {
                 <div className="w-4/5">
                     <div className="aspect-video bg-gray-200 relative" ref={playerContainerRef}>
                         <div id="youtube-player" className="absolute inset-0"></div>
-                        {isLoading && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                        {isLoading && (                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
                                 <Loader2 className="w-12 h-12 text-white animate-spin" />
                             </div>
                         )}
@@ -512,19 +467,21 @@ export default function GameWrapper() {
                 </div>
                 <div className="w-1/5 border-l">
                     <div className="w-full h-full p-2">
-                        <ScrollArea className="h-full w-full rounded-md border overflow-hidden">
+                        <ScrollArea className="h-[calc(55vh-100px)] md:h-[calc(70vh-100px)] w-full rounded-md border overflow-hidden">
                             <div className="p-2">
-                                {PLAYLISTS.map((playlist) => (
+                                {VIDEOS.map((video) => (
                                     <Card
-                                        key={playlist.id}
-                                        className={`mb-2 last:mb-0 cursor-pointer hover:bg-gray-100 ${playlist.id === currentPlaylistId ? 'bg-blue-100' : ''}`}
-                                        onClick={() => handlePlaylistSelect(playlist.id)}
+                                        key={video.id}
+                                        className={`mb-2 last:mb-0 cursor-pointer hover:bg-gray-100 ${
+                                            video.id === currentVideoId ? 'bg-blue-100' : ''
+                                        }`}
+                                        onClick={() => handleVideoSelect(video.id)}
                                     >
                                         <CardContent className="p-2 flex items-center space-x-2">
-                                            <List className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                            <Video className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
-                                                <h3 className="text-xs font-medium truncate" title={playlist.name}>
-                                                    {playlist.name}
+                                                <h3 className="text-xs font-medium truncate" title={video.name}>
+                                                    {video.name}
                                                 </h3>
                                             </div>
                                         </CardContent>
@@ -538,17 +495,24 @@ export default function GameWrapper() {
             <DialogGame
                 open={isDialogOpen}
                 onOpenChange={(open) => {
-                    console.log(`Dialog open state changed to: ${open}`);
                     if (!open) {
-                        resetExercise();
+                        resetExercise()
                     }
-                    setIsDialogOpen(open);
+                    setIsDialogOpen(open)
                 }}
             >
                 <DialogGameContent className="sm:max-w-[600px] flex flex-col items-center">
-                    <DialogGameTitle>Мини-игра {Math.min(currentGameIndex + 1, numExercises)}/{numExercises}</DialogGameTitle>
-                    <DialogGameDescription>Завершите мини-игру, чтобы продолжить просмотр видео.</DialogGameDescription>
-                    {(isExercising && currentGameIndex < numExercises) ? games[currentGameIndex] : <p>Все мини-игры завершены!</p>}
+                    <DialogGameTitle>
+                        Мини-игра {Math.min(currentGameIndex + 1, numExercises)}/{numExercises}
+                    </DialogGameTitle>
+                    <DialogGameDescription>
+                        Завершите мини-игру, чтобы продолжить просмотр видео.
+                    </DialogGameDescription>
+                    {isExercising && currentGameIndex < numExercises ? (
+                        games[currentGameIndex]
+                    ) : (
+                        <p>Все мини-игры завершены!</p>
+                    )}
                 </DialogGameContent>
             </DialogGame>
         </div>

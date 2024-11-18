@@ -10,19 +10,19 @@ import { toast } from "sonner"
 interface ContentViewProps {
     content: {
         videoUrl: string;
-        playlistId: string;
+        videoId: string;
     };
-    onSave: (content: { videoUrl: string; playlistId: string }) => void;
+    onSave: (content: { videoUrl: string; videoId: string }) => void;
     onClose: () => void;
 }
 
 export default function ContentView({ content, onSave, onClose }: ContentViewProps) {
     const [localVideoUrl, setLocalVideoUrl] = useState(content.videoUrl)
-    const [localPlaylistId, setLocalPlaylistId] = useState(content.playlistId)
+    const [localVideoId, setLocalVideoId] = useState(content.videoId)
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        onSave({ videoUrl: localVideoUrl, playlistId: localPlaylistId })
+        onSave({ videoUrl: localVideoUrl, videoId: localVideoId })
         toast.success(`Content saved successfully.`, {
             action: {
                 label: "Hide",
@@ -47,13 +47,13 @@ export default function ContentView({ content, onSave, onClose }: ContentViewPro
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="playlistId">Playlist ID (optional)</Label>
+                        <Label htmlFor="videoId">Video ID (optional)</Label>
                         <Input
-                            id="playlistId"
+                            id="videoId"
                             type="text"
-                            value={localPlaylistId}
-                            onChange={(e) => setLocalPlaylistId(e.target.value)}
-                            placeholder="PLxxxxxxxxxxxxxxxx"
+                            value={localVideoId}
+                            onChange={(e) => setLocalVideoId(e.target.value)}
+                            placeholder="xxxxxxxxxxxxxxxx"
                         />
                     </div>
                 </CardContent>
