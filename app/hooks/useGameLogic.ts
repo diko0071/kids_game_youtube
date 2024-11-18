@@ -48,6 +48,7 @@ export function useGameLogic<T>(
   }
 
   const handleAnswer = useCallback((answer: T) => {
+
     if (checkAnswer(answer)) {
       setIsCorrect(true);
       const praise = getRandomPraise();
