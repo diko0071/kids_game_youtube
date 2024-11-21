@@ -1,7 +1,7 @@
 import React from "react";
 
-export const IceCream = ({ colors }: { colors: string[] }) => (
-    <svg width="80" height="120" viewBox="0 0 120 180">
+export const IceCream = ({ colors, scale = 1 }: { colors: string[], scale?: number }) => (
+    <svg width={80 * scale} height={120 * scale} viewBox="0 0 120 180">
         <path d="M60 180 L20 80 L100 80 Z" fill="#FFA94D" />
         {colors.map((color, index) => (
             <ellipse
@@ -17,8 +17,8 @@ export const IceCream = ({ colors }: { colors: string[] }) => (
     </svg>
 )
 
-export const Cake = ({ colors }: { colors: string[] }) => (
-    <svg width="80" height="120" viewBox="0 0 120 120">
+export const Cake = ({ colors, scale = 1 }: { colors: string[], scale?: number }) => (
+    <svg width={80 * scale} height={120 * scale} viewBox="0 0 120 120">
         {/* Base */}
         <rect x="20" y="80" width="80" height="20" fill="#8B4513" />
         {/* Layers */}

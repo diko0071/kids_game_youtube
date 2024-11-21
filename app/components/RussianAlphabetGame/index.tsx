@@ -64,26 +64,27 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
 
 
     return (
-        <div className="flex flex-col items-center justify-start bg-gradient-to-r from-blue-300 to-green-300 p-4 rounded-lg w-[550px]">
-            <div className="flex justify-center mb-12 mt-12">
+        <div className="flex flex-col items-center justify-start bg-gradient-to-r from-blue-300 to-green-300 p-4 rounded-lg w-full max-w-[550px]">
+            <div className="flex justify-center mb-8 mt-8 sm:mb-12 sm:mt-12">
                 <RussianLetter
                     letter={currentLetter}
                     color={letterColors[russianLetters.indexOf(currentLetter)]}
+                    scale={0.8}
                 />
             </div>
-            <div className="flex gap-8 mb-8">
+            <div className="flex gap-4 sm:gap-8 mb-6 sm:mb-8">
                 {options.map((option) => (
                     <Button
                         key={option}
                         onClick={() => handleLetterClick(option)}
-                        className="text-3xl font-bold w-16 h-16 rounded-full bg-yellow-400 hover:bg-yellow-500 text-purple-800"
+                        className="text-2xl sm:text-3xl font-bold w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-yellow-400 hover:bg-yellow-500 text-purple-800"
                     >
                         {option}
                     </Button>
                 ))}
             </div>
             {message && (
-                <div className={`text-2xl font-bold mb-4 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+                <div className={`text-xl sm:text-2xl font-bold mb-4 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
                     {message}
                 </div>
             )}

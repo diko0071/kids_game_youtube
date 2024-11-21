@@ -406,11 +406,12 @@ export default function GameWrapper() {
 
     return (
         <div className="min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8 flex flex-col items-center">
-            <div className="w-[90%] max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden flex">
-                <div className="w-4/5">
+            <div className="w-full max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden flex flex-col md:flex-row">
+                <div className="w-full md:w-4/5">
                     <div className="aspect-video bg-gray-200 relative" ref={playerContainerRef}>
                         <div id="youtube-player" className="absolute inset-0"></div>
-                        {isLoading && (                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                        {isLoading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
                                 <Loader2 className="w-12 h-12 text-white animate-spin" />
                             </div>
                         )}
@@ -467,9 +468,9 @@ export default function GameWrapper() {
                         </div>
                     </div>
                 </div>
-                <div className="w-1/5 border-l">
-                    <div className="w-full h-full p-2">
-                        <ScrollArea className="h-[calc(55vh-100px)] md:h-[calc(70vh-100px)] w-full rounded-md border overflow-hidden">
+                <div className="w-full md:w-1/5 border-l">
+                    <div className="w-full h-full">
+                        <ScrollArea className="h-[56.25vw] md:h-[calc((100vw*0.8*0.5625))] max-h-[calc((1152px*0.8*0.5625))] w-full rounded-md border overflow-hidden">
                             <div className="p-2">
                                 {VIDEOS.map((video) => (
                                     <Card

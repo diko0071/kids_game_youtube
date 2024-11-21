@@ -17,8 +17,8 @@ export const ghostColors = [
     { color: '#FF0000', name: 'Красный', englishName: 'Red' }
 ]
 
-export const Ghost = ({ color }: { color: string }) => (
-    <svg width="150" height="200" viewBox="0 0 150 200">
+export const Ghost = ({ color, scale = 1 }: { color: string, scale?: number }) => (
+    <svg width={150 * scale} height={200 * scale} viewBox="0 0 150 200">
         <path d="M75 20 C40 20, 20 60, 20 100 C20 160, 50 180, 75 180 C100 180, 130 160, 130 100 C130 60, 110 20, 75 20 Z" fill={color} />
         <circle cx="55" cy="80" r="10" fill="#FFFFFF" />
         <circle cx="95" cy="80" r="10" fill="#FFFFFF" />
