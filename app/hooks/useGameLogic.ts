@@ -37,6 +37,7 @@ export function useGameLogic<T>(
 ) {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
   const [message, setMessage] = useState('')
+  const [isCompleted, setIsCompleted] = useState(false)
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   const { playHappySound, playSadSound } = useGameAudio()
@@ -48,9 +49,11 @@ export function useGameLogic<T>(
   }
 
   const handleAnswer = useCallback((answer: T) => {
+    if (isCompleted) return // Prevent multiple completions
 
     if (checkAnswer(answer)) {
       setIsCorrect(true);
+      setIsCompleted(true); // Mark as completed
       const praise = getRandomPraise();
       setMessage(praise);
 
@@ -74,12 +77,13 @@ export function useGameLogic<T>(
         }, 1300);
       });
     }
-  }, [checkAnswer, onSuccess, onFailure, playHappySound, playSadSound, speakText, language]);
+  }, [checkAnswer, onSuccess, onFailure, playHappySound, playSadSound, speakText, language, isCompleted]);
 
   const nextQuestion = useCallback(() => {
     generateNewQuestion()
     setIsCorrect(null)
     setMessage('')
+    setIsCompleted(false)
   }, [generateNewQuestion])
 
   return { isCorrect, message, handleAnswer, nextQuestion }

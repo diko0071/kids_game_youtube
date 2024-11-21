@@ -13,6 +13,7 @@ export default function NumbersGame({ onComplete }: NumbersGameProps) {
     const [dessertCount, setDessertCount] = useState(2)
     const [options, setOptions] = useState<number[]>([])
     const [isIceCream, setIsIceCream] = useState(true)
+    const [isAnswering, setIsAnswering] = useState(false)
 
     const { speakText } = useSpeechSynthesis()
 
@@ -53,9 +54,18 @@ export default function NumbersGame({ onComplete }: NumbersGameProps) {
         generateNewQuestion()
     }, [generateNewQuestion])
 
-    const handleOptionClick = (option: number) => {
-        speakRussianAndEnglishNumber(option, isIceCream)
-        handleAnswer(option)
+    const handleOptionClick = async (option: number) => {
+        if (isAnswering) return
+        setIsAnswering(true)
+        
+        try {
+            speakRussianAndEnglishNumber(option, isIceCream)
+            await handleAnswer(option)
+        } finally {
+            setTimeout(() => {
+                setIsAnswering(false)
+            }, 1000)
+        }
     }
 
     const DessertComponent = isIceCream ? IceCream : Cake
@@ -80,7 +90,8 @@ export default function NumbersGame({ onComplete }: NumbersGameProps) {
                     <Button
                         key={option}
                         onClick={() => handleOptionClick(option)}
-                        className="text-2xl sm:text-3xl font-bold w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-yellow-400 hover:bg-yellow-500 text-purple-800"
+                        disabled={isAnswering}
+                        className="text-2xl sm:text-3xl font-bold w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-yellow-400 hover:bg-yellow-500 text-purple-800 disabled:opacity-50"
                     >
                         {option}
                     </Button>
