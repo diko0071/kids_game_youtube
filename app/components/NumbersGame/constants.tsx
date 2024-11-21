@@ -42,11 +42,11 @@ export const Cake = ({ colors, scale = 1 }: { colors: string[], scale?: number }
 export const iceCreamColors = ['#87CEFA', '#FECA57', '#98FB98', '#FFB6C1']
 export const cakeColors = ['#FF69B4', '#20B2AA', '#FF7F50', '#FFD700']
 export const russianNumbers = [
-    'Ноль мороженых', 'Одно мороженое', 'Два мороженых', 'Три мороженых', 'Четыре мороженых',
-    'Ноль тортиков', 'Один тортик', 'Два тортика', 'Три тортика', 'Четыре тортика'
+    'Три мороженых', 'Четыре мороженых', 'Пять мороженых', 'Шесть мороженых',
+    'Три тортика', 'Четыре тортика', 'Пять тортиков', 'Шесть тортиков'
 ]
 
 export const englishNumbers = [
-    'Zero ice creams', 'One ice cream', 'Two ice creams', 'Three ice creams', 'Four ice creams',
-    'Zero cakes', 'One cake', 'Two cakes', 'Three cakes', 'Four cakes'
+    'Three ice creams', 'Four ice creams', 'Five ice creams', 'Six ice creams',
+    'Three cakes', 'Four cakes', 'Five cakes', 'Six cakes'
 ]

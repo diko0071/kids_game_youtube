@@ -17,20 +17,20 @@ export default function NumbersGame({ onComplete }: NumbersGameProps) {
     const { speakText } = useSpeechSynthesis()
 
     const speakRussianAndEnglishNumber = useCallback((number: number, isIceCream: boolean) => {
-        const index = isIceCream ? number : number + 5
+        const index = isIceCream ? number - 3 : number + 1
         const russianText = russianNumbers[index]
         const englishText = englishNumbers[index]
         speakText(`${russianText}, ${englishText}`)
     }, [speakText])
 
     const generateNewQuestion = useCallback(() => {
-        const count = Math.floor(Math.random() * 4) + 1
+        const count = Math.floor(Math.random() * 4) + 3
         setDessertCount(count)
         setIsIceCream(prev => !prev)
 
         let newOptions = [count]
         while (newOptions.length < 3) {
-            const option = Math.floor(Math.random() * 4) + 1
+            const option = Math.floor(Math.random() * 4) + 3
             if (!newOptions.includes(option)) {
                 newOptions.push(option)
             }
