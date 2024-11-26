@@ -18,9 +18,14 @@ import GhostGame from "@/app/components/GhostGame"
 import WordMatchingGame from "@/app/components/WordMatchingGame"
 import { SyllableMatchingGame } from "@/app/components/SyllableMatchingGame"
 import { DEFAULT_SETTINGS } from '@/app/components/Settings/types'
+import type { YouTubeProps } from 'react-youtube'
+import type { ComponentType } from 'react'
 
 // Динамический импорт YouTube компонента
-const YouTube = dynamic(() => import('react-youtube'), { ssr: false })
+const YouTube = dynamic<YouTubeProps>(() => 
+  import('react-youtube').then((mod) => mod.default as ComponentType<YouTubeProps>), 
+  { ssr: false }
+)
 
 declare global {
     interface Window {
