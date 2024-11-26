@@ -25,6 +25,22 @@ export const SyllableMatchingGame: React.FC<Props> = ({ language = 'ru-RU', onCo
     generateNewQuestion();
   }, [generateNewQuestion]);
 
+  // Обработка клавиши Escape
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && onComplete) {
+        onComplete();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onComplete]);
+
+  if (!targetWord || !firstSyllables.length || !secondSyllables.length) {
+    return null;
+  }
+
   return (
     <div className={styles.container}>
       {/* Целевое слово */}
@@ -43,7 +59,6 @@ export const SyllableMatchingGame: React.FC<Props> = ({ language = 'ru-RU', onCo
                 ${selectedFirst?.id === syllable.id ? styles.selected : ''} 
                 ${selectedFirst?.id === syllable.id && selectedSecond && isCorrect ? styles.correct : ''}`}
               onClick={() => handleSyllableClick(syllable)}
-              disabled={isCorrect === true}
             >
               {syllable.text}
             </button>
@@ -59,7 +74,6 @@ export const SyllableMatchingGame: React.FC<Props> = ({ language = 'ru-RU', onCo
                 ${selectedSecond?.id === syllable.id ? styles.selected : ''} 
                 ${selectedSecond?.id === syllable.id && isCorrect ? styles.correct : ''}`}
               onClick={() => handleSyllableClick(syllable)}
-              disabled={isCorrect === true}
             >
               {syllable.text}
             </button>
