@@ -16,24 +16,41 @@ interface RussianAlphabetGameProps {
 }
 
 export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameProps) {
-    const [currentLetter, setCurrentLetter] = useState('')
+    const [currentLetter, setCurrentLetter] = useState<string>('')
     const [options, setOptions] = useState<string[]>([])
 
     const { speakText } = useSpeechSynthesis()
 
-    const generateNewQuestion = useCallback(() => {
-        const letter = russianLetters[Math.floor(Math.random() * russianLetters.length)]
-        setCurrentLetter(letter)
+    const getRandomLetter = (): string => {
+        return russianLetters[Math.floor(Math.random() * russianLetters.length)]
+    }
 
-        let newOptions = [letter]
+    const generateNewQuestion = useCallback(() => {
+        const newLetter = getRandomLetter()
+        setCurrentLetter(newLetter)
+        console.log('New target letter:', newLetter)
+
+        let newOptions = [newLetter]
         while (newOptions.length < 3) {
-            const option = russianLetters[Math.floor(Math.random() * russianLetters.length)]
+            const option = getRandomLetter()
             if (!newOptions.includes(option)) {
                 newOptions.push(option)
             }
         }
         setOptions(newOptions.sort(() => Math.random() - 0.5))
     }, [])
+
+    // Separate effect for pronunciation
+    useEffect(() => {
+        if (currentLetter) {
+            speakText(currentLetter.toLowerCase(), 'ru-RU')
+        }
+    }, [currentLetter, speakText])
+
+    // Initialize game
+    useEffect(() => {
+        generateNewQuestion()
+    }, [generateNewQuestion])
 
     const checkAnswer = useCallback((answer: string) => {
         return answer === currentLetter
@@ -53,15 +70,21 @@ export default function RussianAlphabetGame({ onComplete }: RussianAlphabetGameP
     )
 
     const handleLetterClick = (letter: string) => {
-        speakRussianAndEnglishWord(letter)
+        console.log('Letter clicked:', letter)
+        
+        // Speak the letter and then the example word
+        speakText(letter.toLowerCase(), 'ru-RU')
+            .then(() => {
+                setTimeout(() => {
+                    const words = russianWords[letter as keyof typeof russianWords]
+                    const randomWord = words[Math.floor(Math.random() * words.length)]
+                    const textToSpeak = `${randomWord.russian}, ${randomWord.english}`
+                    speakText(textToSpeak, 'ru-RU')
+                }, 1000)
+            })
+
         handleAnswer(letter)
     }
-
-    useEffect(() => {
-        generateNewQuestion()
-    }, [generateNewQuestion])
-
-
 
     return (
         <div className="flex flex-col items-center justify-start bg-gradient-to-r from-blue-300 to-green-300 p-4 rounded-lg w-full max-w-[550px]">
