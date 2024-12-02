@@ -12,19 +12,21 @@ import dynamic from 'next/dynamic'
 import ExerciseSettings from "@/app/components/Settings"
 import ContentView from "@/app/components/ContentView"
 import { DialogGame, DialogGameContent, DialogGameTitle, DialogGameDescription } from '@/components/ui/dialog_game'
-import NumbersGame from "@/app/components/NumbersGame"
-import RussianAlphabetGame from "@/app/components/RussianAlphabetGame"
-import GhostGame from "@/app/components/GhostGame"
-import WordMatchingGame from "@/app/components/WordMatchingGame"
-import { SyllableMatchingGame } from "@/app/components/SyllableMatchingGame"
 import { DEFAULT_SETTINGS } from '@/app/components/Settings/types'
 import type { YouTubeProps } from 'react-youtube'
 import type { ComponentType } from 'react'
 
-// Динамический импорт YouTube компонента
+// Dynamic imports for all games
+const NumbersGame = dynamic(() => import('@/app/components/NumbersGame'), { ssr: false })
+const RussianAlphabetGame = dynamic(() => import('@/app/components/RussianAlphabetGame'), { ssr: false })
+const GhostGame = dynamic(() => import('@/app/components/GhostGame'), { ssr: false })
+const WordMatchingGame = dynamic(() => import('@/app/components/WordMatchingGame'), { ssr: false })
+const SyllableMatchingGame = dynamic(() => import('@/app/components/SyllableMatchingGame').then(mod => mod.SyllableMatchingGame), { ssr: false })
+
+// Dynamic import for YouTube component
 const YouTube = dynamic<YouTubeProps>(() => 
-  import('react-youtube').then((mod) => mod.default as ComponentType<YouTubeProps>), 
-  { ssr: false }
+    import('react-youtube').then((mod) => mod.default as ComponentType<YouTubeProps>), 
+    { ssr: false }
 )
 
 declare global {
@@ -56,6 +58,7 @@ export default function GameWrapper() {
     const [completedGames, setCompletedGames] = useState(0)
     const [games, setGames] = useState<JSX.Element[]>([])
     const [lastGameIndex, setLastGameIndex] = useState<number | null>(null)
+    const timerRef = useRef<NodeJS.Timeout | null>(null)
 
     const playerRef = useRef<any>(null)
     const router = useRouter()
@@ -85,13 +88,43 @@ export default function GameWrapper() {
     }
 
     const handleStateChange = (event: any) => {
+        console.log('Video state changed:', event.data)
+        
         if (event.data === window.YT.PlayerState.PLAYING) {
-            const timer = setInterval(() => {
-                if (playerRef.current) {
-            handleExercise()
-                }
-            }, frequency * 60 * 1000)
-            return () => clearInterval(timer)
+            console.log('Video started playing')
+            if (!isExercising && !timerRef.current) {
+                startTimer()
+            }
+        } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.ENDED) {
+            stopTimer()
+        }
+    }
+
+    const startTimer = () => {
+        const currentFrequency = Number(localStorage.getItem('settings') ? 
+            JSON.parse(localStorage.getItem('settings')!).frequency : 
+            frequency)
+        
+        console.log('Starting timer for', currentFrequency, 'minutes')
+        if (timerRef.current) {
+            clearTimeout(timerRef.current)
+        }
+        
+        const timeoutId = setTimeout(() => {
+            console.log('Timer finished! Starting exercise...')
+            if (playerRef.current && !isExercising) {
+                handleExercise()
+            }
+        }, currentFrequency * 60 * 1000) // используем текущее значение из localStorage
+
+        timerRef.current = timeoutId
+    }
+
+    const stopTimer = () => {
+        console.log('Stopping timer')
+        if (timerRef.current) {
+            clearTimeout(timerRef.current)
+            timerRef.current = null
         }
     }
 
@@ -103,6 +136,9 @@ export default function GameWrapper() {
 
     const handleExercise = () => {
         if (!isExercising) {
+            if (playerRef.current) {
+                playerRef.current.pauseVideo()
+            }
             setIsExercising(true)
             setIsDialogOpen(true)
             setCurrentGameIndex(0)
@@ -131,6 +167,9 @@ export default function GameWrapper() {
         setCurrentGameIndex(0)
         setCompletedGames(0)
         setGames([])
+        if (playerRef.current) {
+            playerRef.current.playVideo()
+        }
     }
 
     const generateRandomGames = () => {

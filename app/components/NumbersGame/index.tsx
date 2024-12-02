@@ -2,29 +2,30 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
-import { useGameLogic } from '../../hooks/useGameLogic'
-import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis'
-import {IceCream, Cake, russianNumbers, englishNumbers, cakeColors, iceCreamColors} from "@/app/components/NumbersGame/constants";
+import { useGameLogic } from '@/app/hooks/useGameLogic'
+import { useSpeechSynthesis } from '@/app/hooks/useSpeechSynthesis'
+import {IceCream, Cake, russianNumbers, englishNumbers, cakeColors, iceCreamColors} from "./constants"
+
 interface NumbersGameProps {
     onComplete: () => void;
 }
 
-export default function NumbersGame({ onComplete }: NumbersGameProps) {
-    const [dessertCount, setDessertCount] = useState(2)
+function NumbersGame({ onComplete }: NumbersGameProps): JSX.Element {
+    const [dessertCount, setDessertCount] = useState<number>(2)
     const [options, setOptions] = useState<number[]>([])
-    const [isIceCream, setIsIceCream] = useState(true)
-    const [isAnswering, setIsAnswering] = useState(false)
+    const [isIceCream, setIsIceCream] = useState<boolean>(true)
+    const [isAnswering, setIsAnswering] = useState<boolean>(false)
 
     const { speakText } = useSpeechSynthesis()
 
-    const speakRussianAndEnglishNumber = useCallback((number: number, isIceCream: boolean) => {
+    const speakRussianAndEnglishNumber = useCallback((number: number, isIceCream: boolean): void => {
         const index = isIceCream ? number - 3 : number + 1
         const russianText = russianNumbers[index]
         const englishText = englishNumbers[index]
         speakText(`${russianText}, ${englishText}`)
     }, [speakText])
 
-    const generateNewQuestion = useCallback(() => {
+    const generateNewQuestion = useCallback((): void => {
         const count = Math.floor(Math.random() * 4) + 3
         setDessertCount(count)
         setIsIceCream(prev => !prev)
@@ -39,7 +40,7 @@ export default function NumbersGame({ onComplete }: NumbersGameProps) {
         setOptions(newOptions.sort(() => Math.random() - 0.5))
     }, [])
 
-    const checkAnswer = useCallback((answer: number) => {
+    const checkAnswer = useCallback((answer: number): boolean => {
         return answer === dessertCount
     }, [dessertCount])
 
@@ -54,7 +55,7 @@ export default function NumbersGame({ onComplete }: NumbersGameProps) {
         generateNewQuestion()
     }, [generateNewQuestion])
 
-    const handleOptionClick = async (option: number) => {
+    const handleOptionClick = async (option: number): Promise<void> => {
         if (isAnswering) return
         setIsAnswering(true)
         
@@ -105,3 +106,5 @@ export default function NumbersGame({ onComplete }: NumbersGameProps) {
         </div>
     )
 }
+
+export default NumbersGame

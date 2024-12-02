@@ -3,22 +3,57 @@ import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
 
 export const useSpeechSynthesis = () => {
   const speakText = useCallback(async (text: string, language: string = 'ru-RU') => {
+    console.log('Speaking text:', text, 'in language:', language);
+    
     try {
-      // Если браузерный синтез речи доступен, используем его как запасной вариант
+      // Используем браузерный синтез речи
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = language;
-        window.speechSynthesis.speak(utterance);
-        return;
+        
+        // Для русского языка установим специальный голос
+        if (language === 'ru-RU') {
+          const voices = window.speechSynthesis.getVoices();
+          const russianVoice = voices.find(voice => 
+            voice.lang.includes('ru') || 
+            voice.name.toLowerCase().includes('russian')
+          );
+          if (russianVoice) {
+            utterance.voice = russianVoice;
+          }
+        }
+
+        // Настройка параметров речи
+        utterance.rate = 0.9; // Немного замедляем скорость
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        return new Promise((resolve) => {
+          utterance.onend = () => {
+            console.log('Speech finished successfully');
+            resolve(true);
+          };
+          utterance.onerror = (event) => {
+            console.error('Speech error:', event);
+            resolve(false);
+          };
+          window.speechSynthesis.speak(utterance);
+        });
       }
 
-      // Если нет браузерного синтеза, пробуем использовать Microsoft Speech Services
+      // Если браузерный синтез недоступен, используем Microsoft Speech Services
       const speechConfig = sdk.SpeechConfig.fromSubscription(
         process.env.NEXT_PUBLIC_SPEECH_KEY || '',
         process.env.NEXT_PUBLIC_SPEECH_REGION || ''
       );
 
       speechConfig.speechSynthesisLanguage = language;
+      
+      // Для русского языка установим специальный голос
+      if (language === 'ru-RU') {
+        speechConfig.speechSynthesisVoiceName = "ru-RU-SvetlanaNeural";
+      }
+      
       const synthesizer = new sdk.SpeechSynthesizer(speechConfig);
 
       return new Promise((resolve, reject) => {
@@ -26,15 +61,16 @@ export const useSpeechSynthesis = () => {
           text,
           result => {
             if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-              resolve(result);
+              console.log('Microsoft Speech synthesis completed successfully');
+              resolve(true);
             } else {
-              console.log("Speech synthesis canceled, using browser synthesis as fallback");
-              // Пробуем использовать браузерный синтез как запасной вариант
+              console.log("Speech synthesis canceled, trying browser synthesis");
+              // Пробуем браузерный синтез как запасной вариант
               if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = language;
                 window.speechSynthesis.speak(utterance);
-                resolve(null);
+                resolve(true);
               } else {
                 reject(new Error("Speech synthesis not available"));
               }
@@ -42,28 +78,22 @@ export const useSpeechSynthesis = () => {
             synthesizer.close();
           },
           error => {
-            console.log("Speech synthesis error, using browser synthesis as fallback");
-            // Пробуем использовать браузерный синтез как запасной вариант
-            if ('speechSynthesis' in window) {
-              const utterance = new SpeechSynthesisUtterance(text);
-              utterance.lang = language;
-              window.speechSynthesis.speak(utterance);
-              resolve(null);
-            } else {
-              reject(error);
-            }
+            console.error("Speech synthesis error:", error);
             synthesizer.close();
+            reject(error);
           }
         );
       });
     } catch (error) {
-      console.log("Speech synthesis error caught in try-catch");
-      // Пробуем использовать браузерный синтез как последний запасной вариант
+      console.error("Speech synthesis error caught in try-catch:", error);
+      // Последняя попытка использовать браузерный синтез
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = language;
         window.speechSynthesis.speak(utterance);
+        return true;
       }
+      return false;
     }
   }, []);
 
