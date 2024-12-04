@@ -1,4 +1,4 @@
-import { VIDEOS } from "@/app/components/GameWrapper.tsx/constants";
+import { VIDEOS } from "@/app/components/GameWrapper/constants";
 
 export const extractVideoId = (url: string): string | null => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
