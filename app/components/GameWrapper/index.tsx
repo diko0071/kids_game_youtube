@@ -215,7 +215,7 @@ export default function GameWrapper() {
         }
     };
 
-    const handleSaveSettings = (newNumExercises: number, newFrequency: number, newControls: number, newDebugMode: boolean) => {
+    const handleSaveSettings = (newNumExercises: number, newFrequency: number, newControls: number) => {
         if (playerRef.current) {
             setCurrentVideoTime(playerRef.current.getCurrentTime());
         }
@@ -227,7 +227,6 @@ export default function GameWrapper() {
             currentVideoTime: currentVideoTime,
             currentVideoId: currentVideoId,
             content: content,
-            debugMode: newDebugMode
         }));
 
         window.location.reload();
@@ -408,8 +407,8 @@ export default function GameWrapper() {
 
     return (
         <div className="min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8 flex flex-col items-center">
-            <div className="w-[90%] max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden flex">
-                <div className="w-4/5">
+            <div className="w-[100%] max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden flex">
+                <div className="w-4/6">
                     <div className="aspect-video bg-gray-200 relative" ref={playerContainerRef}>
                         <div id="youtube-player" className="absolute inset-0"></div>
                         {isLoading && (                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
@@ -418,19 +417,17 @@ export default function GameWrapper() {
                         )}
                     </div>
                     <div className="p-4 sm:p-6 space-y-4">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col sm:flex-row justify-start sm:justify-between items-start sm:items-center gap-2 sm:gap-0">
                             <div>
-                                {debugMode && (
-                                    <Button variant="outline" size="sm" onClick={handleExercise}>
-                                        <PlayCircle className="h-4 w-4 mr-2" />
-                                        Start Exercises
-                                    </Button>
-                                )}
+                                <Button variant="outline" size="sm" onClick={handleExercise} className="w-auto">
+                                    <PlayCircle className="h-4 w-4 mr-2" />
+                                    Start Exercises
+                                </Button>
                             </div>
-                            <div className="flex space-x-2">
+                            <div className="flex flex-row space-x-2 w-auto">
                                 <Dialog open={showSettings} onOpenChange={setShowSettings}>
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" size="sm">
+                                        <Button variant="outline" size="sm" className="w-auto">
                                             <Settings className="h-4 w-4 mr-2" />
                                             Settings
                                         </Button>
@@ -443,14 +440,13 @@ export default function GameWrapper() {
                                             numExercises={numExercises}
                                             frequency={frequency}
                                             controls={controls}
-                                            debugMode={debugMode}
                                             onSave={handleSaveSettings}
                                         />
                                     </DialogContent>
                                 </Dialog>
                                 <Dialog open={showContentView} onOpenChange={setShowContentView}>
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" size="sm">
+                                        <Button variant="outline" size="sm" className="w-auto">
                                             <Video className="h-4 w-4 mr-2" />
                                             Content
                                         </Button>
@@ -469,9 +465,9 @@ export default function GameWrapper() {
                         </div>
                     </div>
                 </div>
-                <div className="w-1/5 border-l">
+                <div className="w-2/6">
                     <div className="w-full h-full p-2">
-                        <ScrollArea className="h-[calc(55vh-100px)] md:h-[calc(70vh-100px)] w-full rounded-md border overflow-hidden">
+                        <ScrollArea className="h-[calc(105vh-100px)] md:h-[calc(60vh-100px)] w-full rounded-md border overflow-hidden">
                             <div className="p-2">
                                 {VIDEOS.map((video) => (
                                     <Card
@@ -481,10 +477,9 @@ export default function GameWrapper() {
                                         }`}
                                         onClick={() => handleVideoSelect(video.id)}
                                     >
-                                        <CardContent className="p-2 flex items-center space-x-2">
-                                            <Video className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="text-xs font-medium truncate" title={video.name}>
+                                        <CardContent className="p-2">
+                                            <div className="flex flex-col space-y-2">
+                                                <h3 className="text-sm font-medium line-clamp-2" title={video.name}>
                                                     {video.name}
                                                 </h3>
                                             </div>

@@ -12,8 +12,7 @@ interface ExerciseSettingsProps {
     numExercises: number;
     frequency: number;
     controls: number;
-    debugMode: boolean;
-    onSave: (numExercises: number, frequency: number, controls: number, debugMode: boolean) => void;
+    onSave: (numExercises: number, frequency: number, controls: number) => void;
     onClose: () => void;
 }
 
@@ -21,14 +20,12 @@ export default function ExerciseSettings({
     numExercises = 5, 
     frequency = 3, 
     controls = 1, 
-    debugMode = false, 
     onSave, 
     onClose 
 }: ExerciseSettingsProps) {
     const [localNumExercises, setLocalNumExercises] = useState(numExercises)
     const [localFrequency, setLocalFrequency] = useState(frequency)
     const [localControls, setLocalControls] = useState(controls)
-    const [localDebugMode, setLocalDebugMode] = useState(debugMode)
     const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
 
     useEffect(() => {
@@ -47,7 +44,7 @@ export default function ExerciseSettings({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        onSave(localNumExercises, localFrequency, localControls, localDebugMode)
+        onSave(localNumExercises, localFrequency, localControls)
         onClose()
     }
 
@@ -86,15 +83,6 @@ export default function ExerciseSettings({
                             onCheckedChange={(checked) => setLocalControls(checked ? 1 : 0)}
                         />
                         <Label htmlFor="controls">Показывать управление YouTube</Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="debugMode"
-                            checked={localDebugMode}
-                            onCheckedChange={(checked) => setLocalDebugMode(checked as boolean)}
-                        />
-                        <Label htmlFor="debugMode">Режим отладки</Label>
                     </div>
 
                     <div className="space-y-2">
