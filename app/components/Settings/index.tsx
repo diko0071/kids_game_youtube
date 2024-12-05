@@ -12,7 +12,7 @@ interface ExerciseSettingsProps {
     numExercises: number;
     frequency: number;
     controls: number;
-    onSave: (numExercises: number, frequency: number, controls: number) => void;
+    onSave: (numExercises: number, frequency: number, controls: number, selectedGames: Settings['games']) => void;
     onClose: () => void;
 }
 
@@ -44,7 +44,7 @@ export default function ExerciseSettings({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        onSave(localNumExercises, localFrequency, localControls)
+        onSave(localNumExercises, localFrequency, localControls, settings.games)
         onClose()
     }
 

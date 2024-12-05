@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/ui/button"
 import ExerciseSettings from "@/app/components/Settings";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger  } from "@/components/ui/dialog"
-import { Settings, Video,  PlayCircle, List, Loader2 } from "lucide-react"
+import { Settings as SettingsIcon, Video,  PlayCircle, List, Loader2 } from "lucide-react"
 import NumbersGame from "@/app/components/NumbersGame";
 import RussianAlphabetGame from "@/app/components/RussianAlphabetGame";
 import ContentView from "@/app/components/ContentView";
@@ -16,6 +16,7 @@ import {extractVideoId, getRandomVideoId, handleVideoSelect} from "@/app/compone
 import {VIDEOS} from "@/app/components/GameWrapper/constants";
 import WordMatchingGame from "@/app/components/WordMatchingGame";
 import { SyllableMatchingGame } from "@/app/components/SyllableMatchingGame";
+import { Settings, DEFAULT_SETTINGS } from '@/app/components/Settings/types'
 
 declare global {
     interface Window {
@@ -87,19 +88,31 @@ export default function GameWrapper() {
 
     const generateRandomGames = () => {
         const gameComponents = [
-            () => <NumbersGame key="game" onComplete={handleGameComplete} />,
-            () => <RussianAlphabetGame key="alphabet" onComplete={handleGameComplete} />,
-            () => <GhostGame key="ghost" onComplete={handleGameComplete} />,
-            () => <WordMatchingGame key="word-matching" onComplete={handleGameComplete} />,
-            () => <SyllableMatchingGame key="syllable-matching" onComplete={handleGameComplete} />,
+            { component: () => <NumbersGame key="game" onComplete={handleGameComplete} />, id: 'numbersGame' },
+            { component: () => <RussianAlphabetGame key="alphabet" onComplete={handleGameComplete} />, id: 'alphabetGame' },
+            { component: () => <GhostGame key="ghost" onComplete={handleGameComplete} />, id: 'ghostGame' },
+            { component: () => <WordMatchingGame key="word-matching" onComplete={handleGameComplete} />, id: 'wordMatchingGame' },
+            { component: () => <SyllableMatchingGame key="syllable-matching" onComplete={handleGameComplete} />, id: 'syllableMatchingGame' },
         ];
 
-        let availableIndices = gameComponents.map((_, index) => index);
+        // Filter games based on settings
+        const savedSettings = localStorage.getItem('videoSettings');
+        const settings = savedSettings ? JSON.parse(savedSettings) : null;
+        const selectedGames = settings?.selectedGames || {};
+
+        const availableGames = gameComponents.filter(game => selectedGames[game.id]);
+        
+        if (availableGames.length === 0) {
+            // If no games are selected, use all games as fallback
+            availableGames.push(...gameComponents);
+        }
+
+        let availableIndices = availableGames.map((_, index) => index);
         const shuffled = [];
 
         for (let i = 0; i < numExercises; i++) {
             if (availableIndices.length === 0) {
-                availableIndices = gameComponents.map((_, index) => index);
+                availableIndices = availableGames.map((_, index) => index);
                 if (lastGameIndex !== null) {
                     availableIndices = availableIndices.filter(index => index !== lastGameIndex);
                 }
@@ -110,7 +123,7 @@ export default function GameWrapper() {
 
             availableIndices.splice(randomIndex, 1);
 
-            shuffled.push(gameComponents[chosenIndex]);
+            shuffled.push(availableGames[chosenIndex].component);
             setLastGameIndex(chosenIndex);
         }
 
@@ -215,7 +228,12 @@ export default function GameWrapper() {
         }
     };
 
-    const handleSaveSettings = (newNumExercises: number, newFrequency: number, newControls: number) => {
+    const handleSaveSettings = (
+        newNumExercises: number, 
+        newFrequency: number, 
+        newControls: number, 
+        selectedGames: Settings['games']
+    ) => {
         if (playerRef.current) {
             setCurrentVideoTime(playerRef.current.getCurrentTime());
         }
@@ -227,6 +245,7 @@ export default function GameWrapper() {
             currentVideoTime: currentVideoTime,
             currentVideoId: currentVideoId,
             content: content,
+            selectedGames: selectedGames,
         }));
 
         window.location.reload();
@@ -428,7 +447,7 @@ export default function GameWrapper() {
                                 <Dialog open={showSettings} onOpenChange={setShowSettings}>
                                     <DialogTrigger asChild>
                                         <Button variant="outline" size="sm" className="w-auto">
-                                            <Settings className="h-4 w-4 mr-2" />
+                                            <SettingsIcon className="h-4 w-4 mr-2" />
                                             Settings
                                         </Button>
                                     </DialogTrigger>
