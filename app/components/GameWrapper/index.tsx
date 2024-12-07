@@ -383,7 +383,7 @@ export default function GameWrapper() {
         document.addEventListener('click', preventNavigation, true);
         document.addEventListener('touchend', preventNavigation, true);
 
-        window.addEventListener('beforeunload', preventBeforeUnload);
+        //window.addEventListener('beforeunload', preventBeforeUnload);
 
         const preventLinkNavigation = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
