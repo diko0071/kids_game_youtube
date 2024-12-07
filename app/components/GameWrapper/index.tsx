@@ -486,7 +486,7 @@ export default function GameWrapper() {
                 </div>
                 <div className="w-2/6">
                     <div className="w-full h-full p-2">
-                        <ScrollArea className="h-[calc(105vh-100px)] md:h-[calc(60vh-100px)] w-full rounded-md border overflow-hidden">
+                        <ScrollArea className="h-[calc(105vh-120px)] md:h-[calc(110vh-120px)] w-full rounded-md border overflow-hidden">
                             <div className="p-2">
                                 {VIDEOS.map((video) => (
                                     <Card

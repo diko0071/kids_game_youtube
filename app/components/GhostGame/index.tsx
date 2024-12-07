@@ -53,22 +53,22 @@ export default function GhostGame({ onComplete }: GhostGameProps) {
     }, [generateNewQuestion])
 
     return (
-        <div className="flex flex-col items-center justify-start bg-gradient-to-r from-gray-200 to-gray-400 p-4 rounded-lg w-full max-w-[550px]">
-            <div className="flex justify-center mb-8 mt-8 sm:mb-12 sm:mt-12">
-                <Ghost color={currentColor.color} scale={0.8} />
+        <div className="flex flex-col items-center justify-start bg-gradient-to-r from-gray-200 to-gray-400 p-2 sm:p-4 rounded-lg w-full max-w-[550px]">
+            <div className="flex justify-center mb-4 mt-4 sm:mb-8 sm:mt-8">
+                <Ghost color={currentColor.color} scale={0.6} />
             </div>
-            <div className="flex gap-4 sm:gap-8 mb-6 sm:mb-8">
+            <div className="flex gap-2 sm:gap-8 mb-4 sm:mb-8">
                 {options.map((option) => (
                     <Button
                         key={option.color}
                         onClick={() => handleColorClick(option)}
-                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full"
+                        className="w-10 h-10 sm:w-16 sm:h-16 rounded-full"
                         style={{ backgroundColor: option.color }}
                     />
                 ))}
             </div>
             {message && (
-                <div className={`text-xl sm:text-2xl font-bold mb-4 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+                <div className={`text-lg sm:text-2xl font-bold mb-4 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
                     {message}
                 </div>
             )}

@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useSyllableGame } from '../../hooks/useSyllableGame';
-import styles from './SyllableMatchingGame.module.css';
 
 interface Props {
   language?: 'ru-RU' | 'en-US';
@@ -20,12 +19,10 @@ export const SyllableMatchingGame: React.FC<Props> = ({ language = 'ru-RU', onCo
     generateNewQuestion
   } = useSyllableGame(language, onComplete);
 
-  // Инициализация игры
   useEffect(() => {
     generateNewQuestion();
   }, [generateNewQuestion]);
 
-  // Обработка клавиши Escape
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && onComplete) {
@@ -42,51 +39,51 @@ export const SyllableMatchingGame: React.FC<Props> = ({ language = 'ru-RU', onCo
   }
 
   return (
-    <div className={styles.container}>
-      {/* Целевое слово */}
-      <div className={styles.targetWord}>
+    <div className="flex flex-col items-center gap-4 p-4 w-full max-w-[600px] mx-auto bg-gradient-to-br from-[#f6d365] to-[#fda085] rounded-xl landscape:max-w-full landscape:p-6">
+      <div className="text-3xl font-bold text-gray-800 px-6 py-3 bg-white rounded-xl shadow-md animate-bounce-small landscape:text-2xl landscape:px-4 landscape:py-2">
         {targetWord}
       </div>
 
-      {/* Контейнер для слогов */}
-      <div className={styles.syllablesContainer}>
-        {/* Первый столбец - первые слоги */}
-        <div className={styles.syllableColumn}>
-          {firstSyllables.map((syllable) => (
-            <button
-              key={syllable.id}
-              className={`${styles.syllable} 
-                ${selectedFirst?.id === syllable.id ? styles.selected : ''} 
-                ${selectedFirst?.id === syllable.id && selectedSecond && isCorrect ? styles.correct : ''}`}
-              onClick={() => handleSyllableClick(syllable)}
-            >
-              {syllable.text}
-            </button>
-          ))}
+      <div className="flex flex-col items-center gap-4 w-full landscape:flex-row landscape:justify-center landscape:items-start">
+        <div className="flex justify-center gap-8 w-full max-w-[400px] landscape:gap-4 landscape:max-w-[300px]">
+          <div className="flex flex-col gap-3 min-w-[80px] landscape:min-w-[60px]">
+            {firstSyllables.map((syllable) => (
+              <button
+                key={syllable.id}
+                className={`px-4 py-3 text-xl font-bold text-center text-gray-600 bg-white border-2 rounded-lg shadow-sm transition-all hover:translate-y-[-2px] hover:shadow-md
+                  ${selectedFirst?.id === syllable.id ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-gray-200'} 
+                  ${selectedFirst?.id === syllable.id && selectedSecond && isCorrect ? 'border-green-500 bg-green-100 text-green-800' : ''}
+                  landscape:text-lg landscape:px-3 landscape:py-2`}
+                onClick={() => handleSyllableClick(syllable)}
+              >
+                {syllable.text}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-3 min-w-[80px] landscape:min-w-[60px]">
+            {secondSyllables.map((syllable) => (
+              <button
+                key={syllable.id}
+                className={`px-4 py-3 text-xl font-bold text-center text-gray-600 bg-white border-2 rounded-lg shadow-sm transition-all hover:translate-y-[-2px] hover:shadow-md
+                  ${selectedSecond?.id === syllable.id ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-gray-200'} 
+                  ${selectedSecond?.id === syllable.id && isCorrect ? 'border-green-500 bg-green-100 text-green-800' : ''}
+                  landscape:text-lg landscape:px-3 landscape:py-2`}
+                onClick={() => handleSyllableClick(syllable)}
+              >
+                {syllable.text}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Второй столбец - вторые слоги */}
-        <div className={styles.syllableColumn}>
-          {secondSyllables.map((syllable) => (
-            <button
-              key={syllable.id}
-              className={`${styles.syllable} 
-                ${selectedSecond?.id === syllable.id ? styles.selected : ''} 
-                ${selectedSecond?.id === syllable.id && isCorrect ? styles.correct : ''}`}
-              onClick={() => handleSyllableClick(syllable)}
-            >
-              {syllable.text}
-            </button>
-          ))}
-        </div>
+        {message && (
+          <div className={`text-xl px-6 py-3 rounded-lg text-center animate-fade-in landscape:text-lg landscape:px-4 landscape:py-2
+            ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {message}
+          </div>
+        )}
       </div>
-
-      {/* Сообщение об ответе */}
-      {message && (
-        <div className={`${styles.message} ${isCorrect ? styles.correct : styles.incorrect}`}>
-          {message}
-        </div>
-      )}
     </div>
   );
 }; 
