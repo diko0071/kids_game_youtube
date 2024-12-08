@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/ui/button"
 import ExerciseSettings from "@/app/components/Settings";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger  } from "@/components/ui/dialog"
-import { Settings as SettingsIcon, Video,  PlayCircle, List, Loader2 } from "lucide-react"
+import { Settings as SettingsIcon, Video, PlayCircle, Loader2 } from "lucide-react"
 import NumbersGame from "@/app/components/NumbersGame";
 import RussianAlphabetGame from "@/app/components/RussianAlphabetGame";
 import ContentView from "@/app/components/ContentView";
-import { DialogGame, DialogGameContent, DialogGameTitle, DialogGameDescription, DialogGameTrigger, DialogGameFooter } from '@/components/ui/dialog_game'
+import { DialogGame, DialogGameContent, DialogGameTitle, DialogGameDescription } from '@/components/ui/dialog_game'
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -16,7 +16,7 @@ import {extractVideoId, getRandomVideoId, handleVideoSelect} from "@/app/compone
 import {VIDEOS} from "@/app/components/GameWrapper/constants";
 import WordMatchingGame from "@/app/components/WordMatchingGame";
 import { SyllableMatchingGame } from "@/app/components/SyllableMatchingGame";
-import { Settings, DEFAULT_SETTINGS } from '@/app/components/Settings/types'
+import { Settings } from '@/app/components/Settings/types'
 
 declare global {
     interface Window {
@@ -24,6 +24,7 @@ declare global {
         onYouTubeIframeAPIReady: () => void;
     }
 }
+
 export default function GameWrapper() {
     const [isPlaying, setIsPlaying] = useState<boolean>(false)
     const [volume, setVolume] = useState<number>(50)
@@ -73,14 +74,9 @@ export default function GameWrapper() {
 
     const checkExerciseTime = () => {
         if (!playerRef.current || isExercising) return
-
         const currentTime = Math.floor(playerRef.current.getCurrentTime())
         const timeSinceLastExercise = Math.abs(currentTime - lastExerciseTime);
-
-        console.log(`Current time: ${currentTime}, Last exercise time: ${lastExerciseTime}, Time since last exercise: ${timeSinceLastExercise}, Frequency: ${frequency * 60}`)
-
         if (timeSinceLastExercise >= frequency * 60) {
-            console.log('Time to show exercise!')
             handleExercise()
             setLastExerciseTime(currentTime)
         }
@@ -95,7 +91,6 @@ export default function GameWrapper() {
             { component: () => <SyllableMatchingGame key="syllable-matching" onComplete={handleGameComplete} />, id: 'syllableMatchingGame' },
         ];
 
-        // Filter games based on settings
         const savedSettings = localStorage.getItem('videoSettings');
         const settings = savedSettings ? JSON.parse(savedSettings) : null;
         const selectedGames = settings?.selectedGames || {};
@@ -103,7 +98,6 @@ export default function GameWrapper() {
         const availableGames = gameComponents.filter(game => selectedGames[game.id]);
         
         if (availableGames.length === 0) {
-            // If no games are selected, use all games as fallback
             availableGames.push(...gameComponents);
         }
 
@@ -120,34 +114,25 @@ export default function GameWrapper() {
 
             const randomIndex = Math.floor(Math.random() * availableIndices.length);
             const chosenIndex = availableIndices[randomIndex];
-
             availableIndices.splice(randomIndex, 1);
-
             shuffled.push(availableGames[chosenIndex].component);
             setLastGameIndex(chosenIndex);
         }
 
-        setGames(shuffled.map((Component, index) =>
-            <Component key={index} />
-        ));
+        setGames(shuffled.map((Component, index) => <Component key={index} />));
     }
 
     const handleGameComplete = () => {
         setCompletedGames(prev => {
             const newCompletedGames = prev + 1;
-            console.log(`Completed games: ${newCompletedGames}, Total games: ${numExercises}`);
-
             if (newCompletedGames >= numExercises) {
-                console.log('All games completed, resetting exercise');
                 setTimeout(() => {
                     resetExercise();
                 }, 500);
             } else {
                 const nextGameIndex = Math.min(newCompletedGames, numExercises - 1);
-                console.log(`Moving to next game: ${nextGameIndex + 1}`);
                 setCurrentGameIndex(nextGameIndex);
             }
-
             return newCompletedGames;
         });
     };
@@ -162,10 +147,8 @@ export default function GameWrapper() {
             (document as any).mozFullScreenElement === iframe ||
             (document as any).msFullscreenElement === iframe;
 
-        console.log('handleExercise: Current fullscreen state:', isCurrentlyFullscreen);
         wasFullScreenRef.current = isCurrentlyFullscreen;
         if (isCurrentlyFullscreen) {
-            console.log('handleExercise: Exiting fullscreen');
             if (document.exitFullscreen) {
                 document.exitFullscreen();
             } else if ((document as any).webkitExitFullscreen) {
@@ -184,23 +167,19 @@ export default function GameWrapper() {
     }
 
     const resetExercise = () => {
-        console.log('resetExercise: Starting reset');
         setIsExercising(false);
         setIsDialogOpen(false);
         setCurrentGameIndex(0);
         setCompletedGames(0);
         if (playerRef.current) {
-            console.log('resetExercise: Resuming video');
             playerRef.current.playVideo();
             if (wasFullScreenRef.current) {
-                console.log('resetExercise: Attempting to enter fullscreen');
                 if (fullscreenAttemptRef.current) {
                     clearTimeout(fullscreenAttemptRef.current);
                 }
                 fullscreenAttemptRef.current = window.setTimeout(() => {
                     const iframe = playerRef.current.getIframe();
                     const enterFullscreen = () => {
-                        console.log('enterFullscreen: Trying to enter fullscreen mode');
                         const fullscreenPromise =
                             iframe.requestFullscreen?.() ||
                             iframe.webkitRequestFullscreen?.() ||
@@ -208,22 +187,14 @@ export default function GameWrapper() {
                             iframe.msRequestFullscreen?.();
 
                         if (fullscreenPromise instanceof Promise) {
-                            fullscreenPromise.then(() => {
-                                console.log('enterFullscreen: Successfully entered fullscreen mode');
-                            }).catch((error) => {
-                                console.log('enterFullscreen: Failed to enter fullscreen mode:', error);
-                                console.log('enterFullscreen: Retrying in 500ms');
+                            fullscreenPromise.catch(() => {
                                 setTimeout(enterFullscreen, 500);
                             });
-                        } else {
-                            console.log('enterFullscreen: Fullscreen method is not a Promise');
                         }
                     };
                     enterFullscreen();
                     fullscreenAttemptRef.current = null;
                 }, 100);
-            } else {
-                console.log('resetExercise: Not attempting fullscreen, wasFullScreen is false');
             }
         }
     };
@@ -251,36 +222,6 @@ export default function GameWrapper() {
         window.location.reload();
     }
 
-    const addCustomOverlay = () => {
-        if (playerContainerRef.current) {
-            const overlay = document.createElement('div');
-            Object.assign(overlay.style, {
-                position: 'absolute',
-                top: '60%',
-                left: '0',
-                right: '0',
-                bottom: '5%',
-                backgroundColor: 'transparent',
-                zIndex: '10',
-                pointerEvents: 'auto'
-            });
-
-            overlay.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (playerRef.current) {
-                    if (playerRef.current.getPlayerState() === window.YT.PlayerState.PLAYING) {
-                        playerRef.current.pauseVideo();
-                    } else {
-                        playerRef.current.playVideo();
-                    }
-                }
-            });
-
-            playerContainerRef.current.appendChild(overlay);
-        }
-    }
-
     const initializeYouTubePlayer = (videoId: string) => {
         if (typeof window !== 'undefined' && window.YT) {
             setIsLoading(true);
@@ -300,7 +241,6 @@ export default function GameWrapper() {
                     onReady: (event: any) => {
                         playerRef.current = event.target;
                         playerRef.current.setVolume(volume);
-                        addCustomOverlay();
                         setIsLoading(false);
                         playerRef.current.playVideo();
                     },
@@ -308,7 +248,6 @@ export default function GameWrapper() {
                         setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
                     },
                     onError: (event: any) => {
-                        console.error('YouTube player error:', event.data);
                         const nextVideo = getRandomVideoId();
                         if (nextVideo) {
                             setCurrentVideoId(nextVideo);
@@ -331,13 +270,11 @@ export default function GameWrapper() {
         if (isPlaying && !isCheckingExerciseTime) {
             setIsCheckingExerciseTime(true)
             intervalId = setInterval(checkExerciseTime, 1000)
-            console.log('Started exercise check interval')
         }
 
         return () => {
             if (intervalId) {
                 clearInterval(intervalId)
-                console.log('Cleared exercise check interval')
             }
             setIsCheckingExerciseTime(false)
         }
@@ -368,47 +305,13 @@ export default function GameWrapper() {
             initializeYouTubePlayer(videoId)
         }
 
-        const preventNavigation = (event: MouseEvent | TouchEvent) => {
-            const target = event.target as HTMLElement;
-            if (target.tagName === 'A' && target.getAttribute('href')) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        };
-        const preventBeforeUnload = (event: BeforeUnloadEvent) => {
-            event.preventDefault();
-            event.returnValue = '';
-        };
-
-        document.addEventListener('click', preventNavigation, true);
-        document.addEventListener('touchend', preventNavigation, true);
-
-        //window.addEventListener('beforeunload', preventBeforeUnload);
-
-        const preventLinkNavigation = (event: MouseEvent) => {
-            const target = event.target as HTMLElement;
-            if (target.tagName === 'A' && target.getAttribute('href')) {
-                event.preventDefault();
-            }
-        };
-
-        document.addEventListener('click', preventLinkNavigation, true);
-
         return () => {
             if (fullscreenAttemptRef.current) {
-                console.log('Cleanup: Clearing fullscreen attempt timeout');
                 clearTimeout(fullscreenAttemptRef.current);
             }
-
             if (playerRef.current) {
                 playerRef.current.destroy()
             }
-
-            document.removeEventListener('click', preventNavigation, true);
-            document.removeEventListener('touchend', preventNavigation, true);
-            document.removeEventListener('click', preventLinkNavigation, true);
-
-            window.removeEventListener('beforeunload', preventBeforeUnload);
         }
     }, []);
 
@@ -430,7 +333,8 @@ export default function GameWrapper() {
                 <div className="w-4/6">
                     <div className="aspect-video bg-gray-200 relative" ref={playerContainerRef}>
                         <div id="youtube-player" className="absolute inset-0"></div>
-                        {isLoading && (                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                        {isLoading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
                                 <Loader2 className="w-12 h-12 text-white animate-spin" />
                             </div>
                         )}
