@@ -156,38 +156,43 @@ export const useSyllableGame = (language: 'ru-RU' | 'en-US' = 'ru-RU', onComplet
   const handleSyllableClick = useCallback(async (syllable: Syllable) => {
     if (isSpeaking.current) return;
     
-    let newFirst = selectedFirst;
-    let newSecond = selectedSecond;
+    isSpeaking.current = true;
+    
+    try {
+        let newFirst = selectedFirst;
+        let newSecond = selectedSecond;
 
-    if (syllable.type === 'first') {
-      if (selectedFirst?.id === syllable.id) {
-        setSelectedFirst(null);
-        newFirst = null;
-      } else {
-        setSelectedFirst(syllable);
-        newFirst = syllable;
-      }
-    } else {
-      if (selectedSecond?.id === syllable.id) {
-        setSelectedSecond(null);
-        newSecond = null;
-      } else {
-        setSelectedSecond(syllable);
-        newSecond = syllable;
-      }
+        if (syllable.type === 'first') {
+            if (selectedFirst?.id === syllable.id) {
+                newFirst = null;
+            } else {
+                newFirst = syllable;
+            }
+            setSelectedFirst(newFirst);
+        } else {
+            if (selectedSecond?.id === syllable.id) {
+                newSecond = null;
+            } else {
+                newSecond = syllable;
+            }
+            setSelectedSecond(newSecond);
+        }
+
+        // Произносим текущий выбор
+        if (syllable.type === 'first') {
+            await speakText(syllable.text, language);
+        } else {
+            await speakText(syllable.text, language);
+        }
+
+        // Проверяем комбинацию только если выбраны оба слога
+        if (newFirst && newSecond) {
+            handleAnswer({ first: newFirst, second: newSecond });
+        }
+    } finally {
+        isSpeaking.current = false;
     }
-
-    // Произносим текущий выбор
-    await pronounceSelection(
-      syllable.type === 'first' ? newFirst : selectedFirst,
-      syllable.type === 'second' ? newSecond : selectedSecond
-    );
-
-    // Проверяем комбинацию только если выбраны оба слога
-    if (newFirst && newSecond) {
-      handleAnswer({ first: newFirst, second: newSecond });
-    }
-  }, [selectedFirst, selectedSecond, handleAnswer, pronounceSelection]);
+}, [selectedFirst, selectedSecond, handleAnswer, language, speakText]);
 
   return {
     targetWord: displayedWord,
