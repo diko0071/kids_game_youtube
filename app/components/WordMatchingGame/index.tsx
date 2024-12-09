@@ -13,8 +13,7 @@ interface WordMatchingGameProps {
 export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) {
     const [currentWord, setCurrentWord] = useState<typeof familyWords[0] | null>(null);
     const [options, setOptions] = useState<string[]>([]);
-    const [isSpeaking, setIsSpeaking] = useState(false);
-    const [canAnswer, setCanAnswer] = useState(true);
+    const isSpeaking = useRef(false);
     const isInitialMount = useRef(true);
     const speakTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -22,9 +21,9 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
 
     // Функция для произношения слова
     const speakWord = useCallback(async (word: typeof familyWords[0]) => {
-        if (!word || isSpeaking) return;
+        if (!word || isSpeaking.current) return;
         
-        setIsSpeaking(true);
+        isSpeaking.current = true;
 
         try {
             await speakText(word.russian, 'ru-RU');
@@ -33,14 +32,19 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
                 clearTimeout(speakTimeoutRef.current);
             }
             
-            speakTimeoutRef.current = setTimeout(async () => {
-                await speakText(word.english, 'en-US');
-                setIsSpeaking(false);
-            }, 500);
-            
+            await new Promise<void>((resolve) => {
+                speakTimeoutRef.current = setTimeout(async () => {
+                    try {
+                        await speakText(word.english, 'en-US');
+                    } finally {
+                        resolve();
+                    }
+                }, 500);
+            });
         } catch (error) {
             console.error('Error speaking word:', error);
-            setIsSpeaking(false);
+        } finally {
+            isSpeaking.current = false;
         }
     }, [speakText]);
 
@@ -58,10 +62,18 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
     );
 
     // Обработка клика по слову
-    const handleWordClick = useCallback((word: string) => {
-        if (isSpeaking) return;
-        handleAnswer(word);
-    }, [isSpeaking, handleAnswer]);
+    const handleWordClick = useCallback(async (word: string) => {
+        if (isSpeaking.current) return;
+        
+        isSpeaking.current = true;
+        
+        try {
+            await speakText(word, 'ru-RU');
+            handleAnswer(word);
+        } finally {
+            isSpeaking.current = false;
+        }
+    }, [speakText, handleAnswer]);
 
     // Инициализация игры
     const initializeGame = useCallback(() => {
@@ -81,7 +93,9 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
         setOptions(allOptions);
         
         // Сразу произносим слово без задержки
-        speakWord(selectedWord);
+        if (!isInitialMount.current) {
+            speakWord(selectedWord);
+        }
     }, [speakWord]);
 
     // Инициализация игры только один раз при монтировании
@@ -89,8 +103,13 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
         if (isInitialMount.current) {
             isInitialMount.current = false;
             initializeGame();
+            
+            // Произносим слово при первой загрузке
+            if (currentWord) {
+                speakWord(currentWord);
+            }
         }
-    }, [initializeGame]);
+    }, [initializeGame, currentWord, speakWord]);
 
     // Очистка таймаутов при размонтировании
     useEffect(() => {
@@ -103,16 +122,16 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
 
     // Повторное произношение слова при клике на него
     const handleRepeatWord = useCallback(() => {
-        if (currentWord && !isSpeaking) {
+        if (currentWord && !isSpeaking.current) {
             speakWord(currentWord);
         }
-    }, [currentWord, isSpeaking, speakWord]);
+    }, [currentWord, speakWord]);
 
     return (
         <div className="flex flex-col items-center justify-start bg-gradient-to-r from-purple-300 to-pink-300 p-2 sm:p-4 rounded-lg w-full max-w-[550px]">
             <button 
                 onClick={handleRepeatWord}
-                disabled={isSpeaking}
+                disabled={isSpeaking.current}
                 className="text-2xl sm:text-4xl font-bold mb-4 mt-4 sm:mb-8 sm:mt-8 hover:opacity-80 transition-opacity disabled:opacity-50"
             >
                 {currentWord?.russian || ''}
@@ -123,6 +142,7 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
                     <Button
                         key={option}
                         onClick={() => handleWordClick(option)}
+                        disabled={isSpeaking.current}
                         className={`flex-1 min-w-[120px] text-base sm:text-xl font-bold p-2 sm:p-4 h-auto rounded-lg 
                             bg-white hover:bg-gray-100 text-purple-800
                             transition-all duration-200`}
