@@ -21,10 +21,8 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
 
     // Функция для произношения слова
     const speakWord = useCallback(async (word: typeof familyWords[0]) => {
-        if (!word || isProcessing) return;
+        if (!word) return;
         
-        setIsProcessing(true);
-
         try {
             await speakText(word.russian, 'ru-RU');
             
@@ -35,13 +33,12 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
             speakTimeoutRef.current = setTimeout(async () => {
                 try {
                     await speakText(word.english, 'en-US');
-                } finally {
-                    setIsProcessing(false);
+                } catch (error) {
+                    console.error('Error speaking English word:', error);
                 }
             }, 500);
         } catch (error) {
-            console.error('Error speaking word:', error);
-            setIsProcessing(false);
+            console.error('Error speaking Russian word:', error);
         }
     }, [speakText]);
 
@@ -60,14 +57,14 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
 
     // Обработка клика по слову
     const handleWordClick = useCallback(async (word: string) => {
-        if (isProcessing) return;
+        // Сначала обрабатываем ответ
+        handleAnswer(word);
         
-        setIsProcessing(true);
+        // Затем произносим слово, если это необходимо
         try {
             await speakText(word, 'ru-RU');
-            handleAnswer(word);
-        } finally {
-            setIsProcessing(false);
+        } catch (error) {
+            console.error('Error speaking word:', error);
         }
     }, [speakText, handleAnswer]);
 

@@ -23,10 +23,11 @@ export const useSyllableGame = (language: 'ru-RU' | 'en-US' = 'ru-RU', onComplet
   const [selectedSecond, setSelectedSecond] = useState<Syllable | null>(null);
   const isInitialMount = useRef(true);
   const isSpeaking = useRef(false);
+  const [isInitialPronunciationComplete, setIsInitialPronunciationComplete] = useState(false);
 
   const { speakText } = useSpeechSynthesis();
 
-  // Генерация нового вопроса
+  // Г��нерация нового вопроса
   const generateNewQuestion = useCallback(() => {
     const targetWordIndex = Math.floor(Math.random() * WORDS.length);
     const newTargetWord = WORDS[targetWordIndex];
@@ -90,7 +91,7 @@ export const useSyllableGame = (language: 'ru-RU' | 'en-US' = 'ru-RU', onComplet
       console.log('[DEBUG] First time initialization');
       generateNewQuestion();
       
-      // Произносим слово только при первой загрузке
+      // Произносим слово при первой загрузке
       setTimeout(() => {
         if (mounted && !isSpeaking.current) {
           console.log('[DEBUG] Speaking initial word');
@@ -99,6 +100,7 @@ export const useSyllableGame = (language: 'ru-RU' | 'en-US' = 'ru-RU', onComplet
             if (mounted) {
               isSpeaking.current = false;
               isInitialMount.current = false;
+              setIsInitialPronunciationComplete(true);
             }
           });
         }
@@ -154,45 +156,44 @@ export const useSyllableGame = (language: 'ru-RU' | 'en-US' = 'ru-RU', onComplet
 
   // Обработка выбора слога
   const handleSyllableClick = useCallback(async (syllable: Syllable) => {
-    if (isSpeaking.current) return;
-    
-    isSpeaking.current = true;
-    
-    try {
-        let newFirst = selectedFirst;
-        let newSecond = selectedSecond;
-
-        if (syllable.type === 'first') {
-            if (selectedFirst?.id === syllable.id) {
-                newFirst = null;
-            } else {
-                newFirst = syllable;
-            }
-            setSelectedFirst(newFirst);
-        } else {
-            if (selectedSecond?.id === syllable.id) {
-                newSecond = null;
-            } else {
-                newSecond = syllable;
-            }
-            setSelectedSecond(newSecond);
-        }
-
-        // Произносим текущий выбор
-        if (syllable.type === 'first') {
-            await speakText(syllable.text, language);
-        } else {
-            await speakText(syllable.text, language);
-        }
-
-        // Проверяем комбинацию только если выбраны оба слога
-        if (newFirst && newSecond) {
-            handleAnswer({ first: newFirst, second: newSecond });
-        }
-    } finally {
-        isSpeaking.current = false;
+    // Block input only if initial pronunciation isn't complete
+    if (!isInitialPronunciationComplete) {
+        return;
     }
-}, [selectedFirst, selectedSecond, handleAnswer, language, speakText]);
+    
+    // Update selection state immediately
+    if (syllable.type === 'first') {
+        const newFirst = selectedFirst?.id === syllable.id ? null : syllable;
+        setSelectedFirst(newFirst);
+        // Only speak if we're selecting (not deselecting)
+        if (newFirst && !isSpeaking.current) {
+            isSpeaking.current = true;
+            await speakText(syllable.text, language);
+            isSpeaking.current = false;
+        }
+    } else {
+        const newSecond = selectedSecond?.id === syllable.id ? null : syllable;
+        setSelectedSecond(newSecond);
+        // Only speak if we're selecting (not deselecting)
+        if (newSecond && !isSpeaking.current) {
+            isSpeaking.current = true;
+            await speakText(syllable.text, language);
+            isSpeaking.current = false;
+        }
+    }
+
+    // Check answer immediately if both syllables are selected
+    const updatedFirst = syllable.type === 'first' ? 
+        (selectedFirst?.id === syllable.id ? null : syllable) : 
+        selectedFirst;
+    const updatedSecond = syllable.type === 'second' ? 
+        (selectedSecond?.id === syllable.id ? null : syllable) : 
+        selectedSecond;
+
+    if (updatedFirst && updatedSecond) {
+        handleAnswer({ first: updatedFirst, second: updatedSecond });
+    }
+}, [selectedFirst, selectedSecond, handleAnswer, language, speakText, isInitialPronunciationComplete]);
 
   return {
     targetWord: displayedWord,
@@ -203,6 +204,7 @@ export const useSyllableGame = (language: 'ru-RU' | 'en-US' = 'ru-RU', onComplet
     handleSyllableClick,
     isCorrect,
     message,
-    generateNewQuestion
+    generateNewQuestion,
+    isInitialPronunciationComplete
   };
 };

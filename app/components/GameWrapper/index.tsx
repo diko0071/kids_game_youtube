@@ -222,9 +222,37 @@ export default function GameWrapper() {
         window.location.reload();
     }
 
+    const addCustomOverlay = () => {
+        if (playerContainerRef.current) {
+            const overlay = document.createElement('div')
+            overlay.style.position = 'absolute'
+            overlay.style.top = '0%'
+            overlay.style.left = '0'
+            overlay.style.right = '0'
+            overlay.style.bottom = '5%'
+            overlay.style.backgroundColor = 'transparent'
+            overlay.style.zIndex = '10'
+            overlay.style.pointerEvents = 'auto'
+
+            overlay.addEventListener('click', (e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                if (playerRef.current) {
+                    if (playerRef.current.getPlayerState() === window.YT.PlayerState.PLAYING) {
+                        playerRef.current.pauseVideo()
+                    } else {
+                        playerRef.current.playVideo()
+                    }
+                }
+            })
+
+            playerContainerRef.current.appendChild(overlay)
+        }
+    }
+
     const initializeYouTubePlayer = (videoId: string) => {
         if (typeof window !== 'undefined' && window.YT) {
-            setIsLoading(true);
+            setIsLoading(true)
             new window.YT.Player('youtube-player', {
                 height: '100%',
                 width: '100%',
@@ -236,13 +264,15 @@ export default function GameWrapper() {
                     modestbranding: 0,
                     iv_load_policy: 3,
                     showinfo: 0,
+                    autoplay: 1
                 },
                 events: {
                     onReady: (event: any) => {
-                        playerRef.current = event.target;
-                        playerRef.current.setVolume(volume);
-                        setIsLoading(false);
-                        playerRef.current.playVideo();
+                        playerRef.current = event.target
+                        playerRef.current.setVolume(volume)
+                        setIsLoading(false)
+                        playerRef.current.playVideo()
+                        addCustomOverlay()
                     },
                     onStateChange: (event: any) => {
                         setIsPlaying(event.data === window.YT.PlayerState.PLAYING);

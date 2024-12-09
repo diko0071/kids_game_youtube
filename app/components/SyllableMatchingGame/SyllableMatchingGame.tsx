@@ -16,7 +16,8 @@ export const SyllableMatchingGame: React.FC<Props> = ({ language = 'ru-RU', onCo
     handleSyllableClick,
     isCorrect,
     message,
-    generateNewQuestion
+    generateNewQuestion,
+    isInitialPronunciationComplete
   } = useSyllableGame(language, onComplete);
 
   useEffect(() => {
@@ -53,8 +54,10 @@ export const SyllableMatchingGame: React.FC<Props> = ({ language = 'ru-RU', onCo
                 className={`px-4 py-3 text-xl font-bold text-center text-gray-600 bg-white border-2 rounded-lg shadow-sm transition-all hover:translate-y-[-2px] hover:shadow-md
                   ${selectedFirst?.id === syllable.id ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-gray-200'} 
                   ${selectedFirst?.id === syllable.id && selectedSecond && isCorrect ? 'border-green-500 bg-green-100 text-green-800' : ''}
+                  ${!isInitialPronunciationComplete ? 'opacity-50 cursor-not-allowed' : ''} 
                   landscape:text-lg landscape:px-3 landscape:py-2`}
                 onClick={() => handleSyllableClick(syllable)}
+                disabled={!isInitialPronunciationComplete}
               >
                 {syllable.text}
               </button>
@@ -68,8 +71,10 @@ export const SyllableMatchingGame: React.FC<Props> = ({ language = 'ru-RU', onCo
                 className={`px-4 py-3 text-xl font-bold text-center text-gray-600 bg-white border-2 rounded-lg shadow-sm transition-all hover:translate-y-[-2px] hover:shadow-md
                   ${selectedSecond?.id === syllable.id ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-gray-200'} 
                   ${selectedSecond?.id === syllable.id && isCorrect ? 'border-green-500 bg-green-100 text-green-800' : ''}
+                  ${!isInitialPronunciationComplete ? 'opacity-50 cursor-not-allowed' : ''} 
                   landscape:text-lg landscape:px-3 landscape:py-2`}
                 onClick={() => handleSyllableClick(syllable)}
+                disabled={!isInitialPronunciationComplete}
               >
                 {syllable.text}
               </button>
@@ -77,7 +82,13 @@ export const SyllableMatchingGame: React.FC<Props> = ({ language = 'ru-RU', onCo
           </div>
         </div>
 
-        {message && (
+        {!isInitialPronunciationComplete && (
+          <div className="text-xl px-6 py-3 rounded-lg text-center animate-fade-in bg-blue-100 text-blue-800 landscape:text-lg landscape:px-4 landscape:py-2">
+            Слушайте слово...
+          </div>
+        )}
+
+        {isInitialPronunciationComplete && message && (
           <div className={`text-xl px-6 py-3 rounded-lg text-center animate-fade-in landscape:text-lg landscape:px-4 landscape:py-2
             ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
             {message}
