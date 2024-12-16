@@ -57,25 +57,29 @@ export function useGameLogic<T>(
       const praise = getRandomPraise();
       setMessage(praise);
 
-      playHappySound().then(() => {
-        setTimeout(() => {
-          speakText(praise, language).then(() => {
-            onSuccess();
-          });
-        }, 1300);
-      });
+      // Chain the promises to ensure proper sequencing
+      playHappySound()
+        .then(() => sleep(1300))
+        .then(() => speakText(praise, language))
+        .then(() => sleep(500)) // Add small delay after speech
+        .then(() => onSuccess())
+        .catch(error => {
+          console.error('Error in success sequence:', error);
+          onSuccess(); // Ensure completion even if audio/speech fails
+        });
     } else {
       setIsCorrect(false);
       const tryAgainMessage = language === 'ru-RU' ? 'Попробуй ещё раз!' : 'Try again!';
       setMessage(tryAgainMessage);
 
-      playSadSound().then(() => {
-        setTimeout(() => {
-          speakText(tryAgainMessage, language).then(() => {
-            onFailure();
-          });
-        }, 1300);
-      });
+      playSadSound()
+        .then(() => sleep(1300))
+        .then(() => speakText(tryAgainMessage, language))
+        .then(() => onFailure())
+        .catch(error => {
+          console.error('Error in failure sequence:', error);
+          onFailure();
+        });
     }
   }, [checkAnswer, onSuccess, onFailure, playHappySound, playSadSound, speakText, language, isCompleted]);
 
