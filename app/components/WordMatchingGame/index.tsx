@@ -84,25 +84,17 @@ export default function WordMatchingGame({ onComplete }: WordMatchingGameProps) 
 
         setCurrentWord(selectedWord);
         setOptions(allOptions);
-        
-        // Сразу произносим слово без задержки
-        if (!isInitialMount.current) {
-            speakWord(selectedWord);
-        }
+        speakWord(selectedWord);
     }, [speakWord]);
 
     // Инициализация игры только один раз при монтировании
     useEffect(() => {
         if (isInitialMount.current) {
+            console.log('[DEBUG] First time initialization');
             isInitialMount.current = false;
             initializeGame();
-            
-            // Произносим слово при первой загрузке
-            if (currentWord) {
-                speakWord(currentWord);
-            }
         }
-    }, [initializeGame, currentWord, speakWord]);
+    }, []); // Remove dependencies that might cause re-runs
 
     // Очистка таймаутов при размонтировании
     useEffect(() => {

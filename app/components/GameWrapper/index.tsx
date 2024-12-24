@@ -126,9 +126,7 @@ export default function GameWrapper() {
         setCompletedGames(prev => {
             const newCompletedGames = prev + 1;
             if (newCompletedGames >= numExercises) {
-                setTimeout(() => {
-                    resetExercise();
-                }, 500);
+                resetExercise();
             } else {
                 const nextGameIndex = Math.min(newCompletedGames, numExercises - 1);
                 setCurrentGameIndex(nextGameIndex);
