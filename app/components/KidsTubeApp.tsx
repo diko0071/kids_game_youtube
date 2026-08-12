@@ -2,16 +2,29 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Play, Settings } from "lucide-react";
+import {
+  Heart,
+  Music2,
+  Play,
+  Rocket,
+  Settings,
+  Sparkles,
+  Truck,
+} from "lucide-react";
 import LearningGame from "./LearningGame";
 import ParentSettings from "./ParentSettings";
 import YouTubePlayer, { YouTubePlayerHandle } from "./YouTubePlayer";
 import {
+  CartoonTopic,
   CartoonVideo,
+  getTopic,
   getPlaybackId,
   getThumbnailUrl,
   getVideo,
+  getVideosForTopic,
   isValidYouTubeId,
+  TOPICS,
+  TopicId,
   VIDEOS,
 } from "@/app/data/catalog";
 import { chooseNextGame } from "@/app/lib/game-engine";
@@ -22,6 +35,43 @@ import {
   normalizeSettings,
   SETTINGS_STORAGE_KEY,
 } from "@/app/lib/settings";
+
+const TOPIC_ICONS = {
+  heart: Heart,
+  sparkles: Sparkles,
+  truck: Truck,
+  music: Music2,
+  rocket: Rocket,
+};
+
+function TopicChoice({
+  topic,
+  selected,
+  videoCount,
+  onSelect,
+}: {
+  topic: CartoonTopic;
+  selected: boolean;
+  videoCount: number;
+  onSelect: () => void;
+}) {
+  const Icon = TOPIC_ICONS[topic.icon];
+
+  return (
+    <button
+      type="button"
+      className={`topic-choice tone-${topic.tone}`}
+      onClick={onSelect}
+      aria-label={`${topic.title}, ${videoCount} видео`}
+      aria-pressed={selected}
+      aria-controls="video-list"
+      data-testid={`topic-${topic.id}`}
+    >
+      <Icon aria-hidden="true" />
+      <span>{topic.shortTitle}</span>
+    </button>
+  );
+}
 
 function VideoListItem({
   video,
@@ -65,6 +115,7 @@ export default function KidsTubeApp() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedVideoId = searchParams.get("video");
+  const requestedTopic = getTopic(searchParams.get("theme"));
   const knownVideo = getVideo(requestedVideoId);
   const currentVideo = useMemo<CartoonVideo>(() => {
     if (!isValidYouTubeId(requestedVideoId)) return VIDEOS[0];
@@ -77,6 +128,9 @@ export default function KidsTubeApp() {
     };
   }, [knownVideo, requestedVideoId]);
 
+  const [activeTopicId, setActiveTopicId] = useState<TopicId>(
+    requestedTopic?.id ?? currentVideo.topicId,
+  );
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
@@ -87,6 +141,11 @@ export default function KidsTubeApp() {
   const previousGameRef = useRef<GameType | null>(null);
   const resumeAfterGameRef = useRef(false);
   const resumeAfterSettingsRef = useRef(false);
+  const activeTopic = getTopic(activeTopicId) ?? TOPICS[0];
+  const visibleVideos = useMemo(
+    () => getVideosForTopic(activeTopicId),
+    [activeTopicId],
+  );
 
   useEffect(() => {
     try {
@@ -103,6 +162,10 @@ export default function KidsTubeApp() {
     playingRef.current = false;
     setIsPlaying(false);
   }, [currentVideo.id]);
+
+  useEffect(() => {
+    setActiveTopicId(requestedTopic?.id ?? currentVideo.topicId);
+  }, [currentVideo.topicId, requestedTopic?.id]);
 
   const handlePlayingChange = useCallback((playing: boolean) => {
     playingRef.current = playing;
@@ -171,7 +234,19 @@ export default function KidsTubeApp() {
   };
 
   const openVideo = (video: CartoonVideo) => {
-    if (video.id !== currentVideo.id) router.push(`/?video=${video.id}`);
+    if (video.id !== currentVideo.id) {
+      router.push(`/?theme=${video.topicId}&video=${video.id}`, { scroll: false });
+    }
+  };
+
+  const openTopic = (topic: CartoonTopic) => {
+    setActiveTopicId(topic.id);
+
+    // Session 019ff4e6-45a8-7993-ba18-825ca748ca24: level one only filters level two; playback changes only after an explicit video choice.
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("theme", topic.id);
+    params.set("video", currentVideo.id);
+    window.history.pushState(null, "", `/?${params.toString()}`);
   };
 
   return (
@@ -206,20 +281,46 @@ export default function KidsTubeApp() {
           />
         </section>
 
-        <aside className="video-sidebar" aria-labelledby="video-list-title">
-          <div className="video-sidebar-header">
-            <h1 id="video-list-title">Мультфильмы</h1>
-          </div>
-          <div className="video-list">
-            {VIDEOS.map((video) => (
-              <VideoListItem
-                key={video.id}
-                video={video}
-                selected={video.id === currentVideo.id}
-                onSelect={() => openVideo(video)}
-              />
-            ))}
-          </div>
+        <aside className="video-sidebar" aria-labelledby="picker-title">
+          <h1 id="picker-title" className="sr-only">Выбор мультфильма</h1>
+
+          <section className="picker-step topic-step" aria-labelledby="topic-step-title">
+            <div className="picker-step-heading">
+              <span className="picker-step-number" aria-hidden="true">1</span>
+              <h2 id="topic-step-title">Тип мультфильма</h2>
+            </div>
+            <div className="topic-choices" role="group" aria-label="Тип мультфильма">
+              {TOPICS.map((topic) => (
+                <TopicChoice
+                  key={topic.id}
+                  topic={topic}
+                  selected={topic.id === activeTopicId}
+                  videoCount={getVideosForTopic(topic.id).length}
+                  onSelect={() => openTopic(topic)}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="picker-step video-step" aria-labelledby="video-step-title">
+            <div className="picker-step-heading video-step-heading">
+              <span className="picker-step-number" aria-hidden="true">2</span>
+              <div>
+                <h2 id="video-step-title">Мультфильм</h2>
+                <p aria-live="polite">{activeTopic.title} · {visibleVideos.length} видео</p>
+              </div>
+            </div>
+            <div className="video-list" id="video-list" key={activeTopicId}>
+              {visibleVideos.map((video) => (
+                <VideoListItem
+                  key={video.id}
+                  video={video}
+                  selected={video.id === currentVideo.id}
+                  onSelect={() => openVideo(video)}
+                />
+              ))}
+            </div>
+          </section>
         </aside>
       </main>
 
