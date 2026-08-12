@@ -49,6 +49,18 @@ button:focus-visible {
   outline-offset: 3px;
 }
 
+.sr-only {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 .app-loading {
   display: grid;
   min-height: 100vh;
@@ -220,7 +232,7 @@ button:focus-visible {
 .video-sidebar {
   display: flex;
   overflow: hidden;
-  height: clamp(320px, 34vw, 650px);
+  height: clamp(390px, 34vw, 650px);
   max-height: calc(100svh - 170px);
   flex-direction: column;
   border: 1px solid rgba(74, 64, 104, 0.1);
@@ -230,16 +242,155 @@ button:focus-visible {
   backdrop-filter: blur(16px);
 }
 
-.video-sidebar-header {
-  flex: 0 0 auto;
-  padding: 22px 22px 15px;
+.picker-step {
+  min-width: 0;
 }
 
-.video-sidebar-header h1 {
-  margin: 0;
-  font-size: 1.32rem;
+.topic-step {
+  flex: 0 0 auto;
+  padding: 18px 18px 16px;
+  border-bottom: 1px solid rgba(74, 64, 104, 0.09);
+}
+
+.picker-step-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.picker-step-number {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  color: white;
+  background: var(--violet);
+  font-size: 0.76rem;
   font-weight: 850;
-  letter-spacing: -0.045em;
+  box-shadow: 0 6px 13px rgba(105, 87, 217, 0.22);
+}
+
+.picker-step-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}
+
+.topic-choices {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.topic-choice {
+  --topic-color: var(--violet);
+  --topic-tint: #eeebff;
+  display: flex;
+  min-width: 0;
+  min-height: 54px;
+  grid-column: span 2;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--ink-soft);
+  background: white;
+  font-size: 0.72rem;
+  font-weight: 790;
+  line-height: 1.08;
+  text-align: center;
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease, background 160ms ease, transform 160ms var(--spring), box-shadow 160ms ease;
+}
+
+.topic-choice:nth-child(4) {
+  grid-column: 1 / span 3;
+}
+
+.topic-choice:nth-child(5) {
+  grid-column: 4 / span 3;
+}
+
+.topic-choice svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.topic-choice span {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.topic-choice:hover {
+  border-color: color-mix(in srgb, var(--topic-color) 48%, var(--line));
+  color: var(--topic-color);
+  transform: translateY(-1px);
+}
+
+.topic-choice[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--topic-color) 72%, white);
+  color: var(--topic-color);
+  background: var(--topic-tint);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--topic-color) 18%, transparent);
+}
+
+.topic-choice.tone-berry {
+  --topic-color: #cc4161;
+  --topic-tint: #fff0f4;
+}
+
+.topic-choice.tone-sun {
+  --topic-color: #a46908;
+  --topic-tint: #fff7db;
+}
+
+.topic-choice.tone-sky {
+  --topic-color: #2877b6;
+  --topic-tint: #eaf5ff;
+}
+
+.topic-choice.tone-mint {
+  --topic-color: #168263;
+  --topic-tint: #e8f8f2;
+}
+
+.topic-choice.tone-violet {
+  --topic-color: #6957d9;
+  --topic-tint: #eeebff;
+}
+
+.video-step {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.video-step-heading {
+  flex: 0 0 auto;
+  padding: 13px 18px 10px;
+}
+
+.video-step-heading > div {
+  min-width: 0;
+}
+
+.video-step-heading p {
+  overflow: hidden;
+  margin: 3px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .video-list {
@@ -248,8 +399,8 @@ button:focus-visible {
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  gap: 10px;
-  padding: 0 14px 16px;
+  gap: 8px;
+  padding: 0 12px 14px;
   scrollbar-color: #cac5d7 transparent;
   scrollbar-width: thin;
 }
@@ -269,9 +420,9 @@ button:focus-visible {
 
 .video-list-item {
   display: grid;
-  min-height: 94px;
+  min-height: 82px;
   flex: 0 0 auto;
-  grid-template-columns: 122px minmax(0, 1fr);
+  grid-template-columns: 108px minmax(0, 1fr);
   overflow: hidden;
   padding: 0;
   border: 1px solid var(--line);
@@ -298,7 +449,7 @@ button:focus-visible {
 .video-list-thumbnail {
   position: relative;
   overflow: hidden;
-  min-height: 94px;
+  min-height: 82px;
   background: #e9e6f1;
 }
 
@@ -341,7 +492,7 @@ button:focus-visible {
   min-width: 0;
   justify-content: center;
   flex-direction: column;
-  padding: 12px 13px;
+  padding: 10px 12px;
 }
 
 .video-list-copy strong {
@@ -356,7 +507,7 @@ button:focus-visible {
 
 .video-list-copy > span {
   overflow: hidden;
-  margin-top: 7px;
+  margin-top: 5px;
   color: var(--ink-soft);
   font-size: 0.73rem;
   text-overflow: ellipsis;
@@ -891,7 +1042,7 @@ button:focus-visible {
   }
 
   .video-list-item {
-    grid-template-columns: 108px minmax(0, 1fr);
+    grid-template-columns: 96px minmax(0, 1fr);
   }
 }
 
@@ -916,7 +1067,7 @@ button:focus-visible {
   }
 
   .video-sidebar {
-    height: min(52svh, 480px);
+    height: min(60svh, 560px);
     max-height: none;
     border-radius: 22px;
   }
@@ -928,12 +1079,12 @@ button:focus-visible {
   }
 
   .video-list-item {
-    min-height: 92px;
-    grid-template-columns: 108px minmax(0, 1fr);
+    min-height: 84px;
+    grid-template-columns: 100px minmax(0, 1fr);
   }
 
   .video-list-thumbnail {
-    min-height: 92px;
+    min-height: 84px;
   }
 
   .modal-overlay,
@@ -1001,12 +1152,27 @@ button:focus-visible {
 
   .video-sidebar {
     width: calc(100% - 24px);
-    height: min(52svh, 460px);
+    height: min(62svh, 520px);
     margin: 0 auto;
   }
 
-  .video-sidebar-header {
-    padding: 18px 17px 12px;
+  .topic-step {
+    padding: 16px 14px 14px;
+  }
+
+  .topic-choices {
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .topic-choice {
+    min-height: 54px;
+    padding: 7px 5px;
+    font-size: 0.69rem;
+  }
+
+  .video-step-heading {
+    padding: 12px 14px 9px;
   }
 
   .video-list {
@@ -1015,7 +1181,12 @@ button:focus-visible {
   }
 
   .video-list-item {
-    grid-template-columns: 116px minmax(0, 1fr);
+    min-height: 82px;
+    grid-template-columns: 108px minmax(0, 1fr);
+  }
+
+  .video-list-thumbnail {
+    min-height: 82px;
   }
 
   .video-list-copy strong {
