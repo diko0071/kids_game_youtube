@@ -1,9 +1,10 @@
 import { Suspense } from "react";
-import GameWrapper from "@/app/components/GameWrapper";
+import KidsTubeApp from "@/app/components/KidsTubeApp";
+
 export default function Home() {
   return (
-    <Suspense fallback={<div>Loading playlist and video...</div>}>
-      <GameWrapper />
+    <Suspense fallback={<div className="app-loading">Готовим мультиигру…</div>}>
+      <KidsTubeApp />
     </Suspense>
-  )
+  );
 }
