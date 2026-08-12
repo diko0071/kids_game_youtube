@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner"
-import HotjarProvider from "@/app/components/Providers/HotjarProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -16,8 +14,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Kids App YouTube Game",
-  description: "Kids App YouTube Game",
+  title: "МультиИгра — мультфильмы с развивающими паузами",
+  description: "Выбирайте мультфильм по теме и проходите короткие развивающие игры между просмотрами.",
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -32,11 +30,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="ru" data-scroll-behavior="smooth">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <HotjarProvider />
         {children}
-        <Toaster />
       </body>
     </html>
   );
