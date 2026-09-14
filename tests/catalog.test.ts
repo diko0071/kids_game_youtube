@@ -10,17 +10,17 @@ import {
 } from "../app/data/catalog";
 
 describe("cartoon catalog", () => {
-  it("has a closed taxonomy of five populated topics and 34 videos", () => {
+  it("has a closed taxonomy of five populated topics and 41 videos", () => {
     const expectedCounts = {
-      stories: 7,
+      stories: 8,
       learning: 8,
       vehicles: 4,
-      songs: 7,
+      songs: 13,
       adventures: 8,
     };
 
     expect(TOPICS).toHaveLength(5);
-    expect(VIDEOS).toHaveLength(34);
+    expect(VIDEOS).toHaveLength(41);
     for (const topic of TOPICS) {
       expect(getVideosForTopic(topic.id)).toHaveLength(expectedCounts[topic.id]);
       expect(getTopic(topic.id)).toEqual(topic);

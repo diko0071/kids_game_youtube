@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   Heart,
   Music2,
+  Pause,
   Play,
   Rocket,
   Settings,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import LearningGame from "./LearningGame";
 import ParentSettings from "./ParentSettings";
+import PauseCatalog from "./PauseCatalog";
 import YouTubePlayer, { YouTubePlayerHandle } from "./YouTubePlayer";
 import {
   CartoonTopic,
@@ -22,7 +24,6 @@ import {
   getThumbnailUrl,
   getVideo,
   getVideosForTopic,
-  isValidYouTubeId,
   TOPICS,
   TopicId,
   VIDEOS,
@@ -102,6 +103,7 @@ function VideoListItem({
         <span className="video-list-play" aria-hidden="true">
           <Play fill="currentColor" />
         </span>
+        {video.durationLabel && <span className="video-list-duration">{video.durationLabel}</span>}
       </span>
       <span className="video-list-copy">
         <strong>{video.title}</strong>
@@ -117,16 +119,9 @@ export default function KidsTubeApp() {
   const requestedVideoId = searchParams.get("video");
   const requestedTopic = getTopic(searchParams.get("theme"));
   const knownVideo = getVideo(requestedVideoId);
-  const currentVideo = useMemo<CartoonVideo>(() => {
-    if (!isValidYouTubeId(requestedVideoId)) return VIDEOS[0];
-    return knownVideo ?? {
-      id: requestedVideoId,
-      title: "Мультфильм по вашей ссылке",
-      channel: "YouTube",
-      language: "ru",
-      topicId: "stories",
-    };
-  }, [knownVideo, requestedVideoId]);
+  // Session 01a09d4d-67ed-7d10-aa87-a5bd1f1c0c17: URL syntax is not parental approval; only catalog identities may reach the player.
+  const blockedVideo = requestedVideoId !== null && !knownVideo;
+  const currentVideo = knownVideo ?? VIDEOS[0];
 
   const [activeTopicId, setActiveTopicId] = useState<TopicId>(
     requestedTopic?.id ?? currentVideo.topicId,
@@ -135,6 +130,7 @@ export default function KidsTubeApp() {
   const [showSettings, setShowSettings] = useState(false);
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [autoplayVideoId, setAutoplayVideoId] = useState<string | null>(null);
   const playerRef = useRef<YouTubePlayerHandle | null>(null);
   const playingRef = useRef(false);
   const watchedSecondsRef = useRef(0);
@@ -161,7 +157,7 @@ export default function KidsTubeApp() {
     setActiveGame(null);
     playingRef.current = false;
     setIsPlaying(false);
-  }, [currentVideo.id]);
+  }, [currentVideo.id, blockedVideo]);
 
   useEffect(() => {
     setActiveTopicId(requestedTopic?.id ?? currentVideo.topicId);
@@ -234,8 +230,11 @@ export default function KidsTubeApp() {
   };
 
   const openVideo = (video: CartoonVideo) => {
-    if (video.id !== currentVideo.id) {
+    if (blockedVideo || video.id !== currentVideo.id) {
+      setAutoplayVideoId(video.id);
       router.push(`/?theme=${video.topicId}&video=${video.id}`, { scroll: false });
+    } else {
+      playerRef.current?.playVideo();
     }
   };
 
@@ -245,7 +244,7 @@ export default function KidsTubeApp() {
     // Session 019ff4e6-45a8-7993-ba18-825ca748ca24: level one only filters level two; playback changes only after an explicit video choice.
     const params = new URLSearchParams(searchParams.toString());
     params.set("theme", topic.id);
-    params.set("video", currentVideo.id);
+    if (!blockedVideo) params.set("video", currentVideo.id);
     window.history.pushState(null, "", `/?${params.toString()}`);
   };
 
@@ -271,18 +270,44 @@ export default function KidsTubeApp() {
       </header>
 
       <main className="watch-only" data-testid="watch-screen">
-        <section className="player-panel" aria-label={currentVideo.title}>
-          <YouTubePlayer
+        <section className="player-panel" aria-label={blockedVideo ? "Выбор мультфильма" : currentVideo.title}>
+          {blockedVideo ? (
+            <div className="player-frame" data-testid="video-not-approved" role="status">
+              <div className="player-status">
+                <strong>Этого видео нет в списке</strong>
+                <span>Выбери мультфильм из списка.</span>
+              </div>
+            </div>
+          ) : <YouTubePlayer
             key={currentVideo.id}
             videoId={getPlaybackId(currentVideo)}
             title={currentVideo.title}
             onPlayingChange={handlePlayingChange}
             onPlayerReady={handlePlayerReady}
-          />
+            autoPlay={autoplayVideoId === currentVideo.id}
+            renderPauseMenu={(ended, resume) => (
+              <PauseCatalog currentVideo={currentVideo} ended={ended} onResume={resume} onSelect={openVideo} />
+            )}
+          />}
+          {isPlaying && !activeGame && !showSettings && (
+            <button type="button" className="button watch-pause" onClick={() => playerRef.current?.pauseVideo()} data-testid="watch-pause">
+              <Pause size={20} aria-hidden="true" />
+              Пауза
+            </button>
+          )}
         </section>
 
         <aside className="video-sidebar" aria-labelledby="picker-title">
           <h1 id="picker-title" className="sr-only">Выбор мультфильма</h1>
+          <label className="compact-topic sidebar-topic-compact">
+            <span className="sr-only">Тип мультфильма</span>
+            <select aria-label="Тип мультфильма при просмотре" value={activeTopicId} onChange={(event) => {
+              const selected = getTopic(event.target.value);
+              if (selected) openTopic(selected);
+            }}>
+              {TOPICS.map((topic) => <option key={topic.id} value={topic.id}>Тип: {topic.shortTitle}</option>)}
+            </select>
+          </label>
 
           <section className="picker-step topic-step" aria-labelledby="topic-step-title">
             <div className="picker-step-heading">
@@ -315,7 +340,7 @@ export default function KidsTubeApp() {
                 <VideoListItem
                   key={video.id}
                   video={video}
-                  selected={video.id === currentVideo.id}
+                  selected={!blockedVideo && video.id === currentVideo.id}
                   onSelect={() => openVideo(video)}
                 />
               ))}

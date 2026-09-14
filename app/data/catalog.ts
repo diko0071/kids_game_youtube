@@ -18,6 +18,7 @@ export interface CartoonVideo {
   channel: string;
   language: "ru" | "en";
   topicId: TopicId;
+  durationLabel?: string;
 }
 
 export const TOPICS: CartoonTopic[] = [
@@ -302,6 +303,62 @@ export const VIDEOS: CartoonVideo[] = [
     channel: "Caillou",
     language: "en",
     topicId: "adventures",
+  },
+  {
+    id: "1XPgV_Z71M0",
+    title: "София - We Have to Be Friends",
+    channel: "Disney Jr.",
+    language: "en",
+    topicId: "songs",
+    durationLabel: "1:52",
+  },
+  {
+    id: "NI1Itabkzqc",
+    title: "Gabby's Dollhouse - песенки про котиков",
+    channel: "Netflix Jr.",
+    language: "en",
+    topicId: "songs",
+    durationLabel: "13:19",
+  },
+  {
+    id: "Zkd88Aa94ac",
+    title: "Зверопой 1 и 2 - сборник песен",
+    channel: "Mini Moments",
+    language: "en",
+    topicId: "songs",
+    durationLabel: "14:56",
+  },
+  {
+    id: "650H2AQHuuY",
+    title: "От улыбки хмурый день светлей",
+    channel: "Мечты сбываются",
+    language: "ru",
+    topicId: "songs",
+    durationLabel: "1:34",
+  },
+  {
+    id: "x2VGBNjxDgk",
+    title: "Бременские музыканты - Ничего на свете лучше нету",
+    channel: "Мультики студии Союзмультфильм",
+    language: "ru",
+    topicId: "songs",
+    durationLabel: "2:14",
+  },
+  {
+    id: "-97vgdIk6-g",
+    title: "Спят усталые игрушки",
+    channel: "Музыка на советском телевидении",
+    language: "ru",
+    topicId: "songs",
+    durationLabel: "1:58",
+  },
+  {
+    id: "qTvKQDojWfg",
+    title: "Русалочка и красная рыбка",
+    channel: "Песни и Сказки для детей",
+    language: "ru",
+    topicId: "stories",
+    durationLabel: "около 35 мин",
   },
 ];
 
