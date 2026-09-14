@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { AlertTriangle, LoaderCircle, Play } from "lucide-react";
 
 interface YouTubePlayerProps {
@@ -8,12 +9,19 @@ interface YouTubePlayerProps {
   title: string;
   onPlayingChange: (isPlaying: boolean) => void;
   onPlayerReady: (player: YouTubePlayerHandle | null) => void;
+  renderPauseMenu: (ended: boolean, resume: () => void) => ReactNode;
+  autoPlay?: boolean;
 }
 
 export interface YouTubePlayerHandle {
   pauseVideo: () => void;
   playVideo: () => void;
-  destroy?: () => void;
+}
+
+interface EmbeddedPlayer extends YouTubePlayerHandle {
+  destroy: () => void;
+  getCurrentTime: () => number;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
 }
 
 declare global {
@@ -25,12 +33,12 @@ declare global {
           videoId: string;
           playerVars: Record<string, number | string>;
           events: {
-            onReady: (event: { target: YouTubePlayerHandle }) => void;
+            onReady: (event: { target: EmbeddedPlayer }) => void;
             onStateChange: (event: { data: number }) => void;
             onError: (event: { data: number }) => void;
           };
         },
-      ) => YouTubePlayerHandle;
+      ) => EmbeddedPlayer;
       PlayerState: {
         PLAYING: number;
       };
@@ -85,55 +93,111 @@ export default function YouTubePlayer({
   title,
   onPlayingChange,
   onPlayerReady,
+  renderPauseMenu,
+  autoPlay = false,
 }: YouTubePlayerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<YouTubePlayerHandle | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const commandsRef = useRef<YouTubePlayerHandle | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "paused" | "ended" | "error">("loading");
   const [errorCode, setErrorCode] = useState<number | null>(null);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    setStatus("loading");
-    setErrorCode(null);
-    onPlayingChange(false);
+    let generation = 0;
+    let player: EmbeddedPlayer | null = null;
+    let position = 0;
+    let hasPlayed = false;
+    let held = false;
+    let restartOnResume = false;
+    let resumePending = false;
+    const mount = mountRef.current;
 
-    const initialize = async () => {
+    // Session 01a09d4d-67ed-7d10-aa87-a5bd1f1c0c17: only navigation, errors and unmount destroy the player; generation rejects events from an obsolete instance.
+    const removePlayer = () => {
+      generation += 1;
+      const previous = player;
+      player = null;
+      try {
+        previous?.destroy();
+      } catch {
+        // The iframe may already be gone after browser navigation; detach the wrapper either way.
+      } finally {
+        mount?.replaceChildren();
+      }
+    };
+
+    const hold = (ended = false) => {
+      if (cancelled || held) return;
+      const currentTime = player?.getCurrentTime?.();
+      if (typeof currentTime === "number" && Number.isFinite(currentTime)) {
+        position = Math.max(0, currentTime);
+      }
+      if (ended) position = 0;
+      held = true;
+      restartOnResume = ended;
+      resumePending = false;
+      player?.pauseVideo();
+      onPlayingChange(false);
+      setStatus(ended ? "ended" : "paused");
+    };
+
+    const initialize = async (resume = false) => {
+      const token = ++generation;
+      held = false;
+      hasPlayed = false;
+      setStatus("loading");
+      setErrorCode(null);
+      onPlayingChange(false);
       try {
         await loadYouTubeApi();
-        if (cancelled || !mountRef.current || !window.YT?.Player) {
+        if (cancelled || token !== generation || !mount || !window.YT?.Player) {
           return;
         }
 
         // Session 019ff4e6-45a8-7993-ba18-825ca748ca24: YouTube replaces its target node, so keep that node inside a React-owned wrapper to avoid removeChild crashes during navigation.
         const playerTarget = document.createElement("div");
-        mountRef.current.replaceChildren(playerTarget);
-        playerRef.current = new window.YT.Player(playerTarget, {
+        mount.replaceChildren(playerTarget);
+        player = new window.YT.Player(playerTarget, {
           videoId,
           playerVars: {
-            autoplay: 0,
+            autoplay: resume ? 1 : 0,
+            start: Math.floor(position),
             controls: 1,
             enablejsapi: 1,
             fs: 1,
             iv_load_policy: 3,
-            modestbranding: 1,
             playsinline: 1,
             rel: 0,
             origin: window.location.origin,
           },
           events: {
             onReady: ({ target }) => {
-              if (cancelled) return;
-              playerRef.current = target;
+              if (cancelled || token !== generation) return;
+              player = target;
+              if (held) { target.pauseVideo(); return; }
               setStatus("ready");
-              onPlayerReady(target);
+              if (resume) {
+                if (position > 0) target.seekTo(position, true);
+                target.playVideo();
+              }
             },
             onStateChange: ({ data }) => {
-              if (cancelled) return;
+              if (cancelled || token !== generation) return;
+              if (held) {
+                if (data === 1) player?.pauseVideo();
+                return;
+              }
+              if (data === 1) { hasPlayed = true; resumePending = false; }
+              if (data === 0 || (data === 2 && hasPlayed && !resumePending)) {
+                hold(data === 0);
+                return;
+              }
               onPlayingChange(data === window.YT?.PlayerState.PLAYING);
             },
             onError: ({ data }) => {
-              if (cancelled) return;
+              if (cancelled || token !== generation) return;
+              removePlayer();
               setErrorCode(data);
               setStatus("error");
               onPlayingChange(false);
@@ -141,27 +205,53 @@ export default function YouTubePlayer({
           },
         });
       } catch {
-        if (!cancelled) {
+        if (!cancelled && token === generation) {
+          removePlayer();
           setStatus("error");
         }
       }
     };
 
-    initialize();
+    const commands: YouTubePlayerHandle = {
+      pauseVideo: () => hold(),
+      playVideo: () => {
+        if (held && player) {
+          held = false;
+          resumePending = true;
+          // Session 01a09d4d-67ed-7d10-aa87-a5bd1f1c0c17: reveal the same media element and issue play within the tap, preserving iOS user activation instead of awaiting a new iframe.
+          flushSync(() => setStatus("ready"));
+          if (restartOnResume) player.seekTo(0, true);
+          restartOnResume = false;
+          player.playVideo();
+        } else if (held) {
+          void initialize(true);
+        } else {
+          player?.playVideo();
+        }
+      },
+    };
+    commandsRef.current = commands;
+    onPlayerReady(commands);
+    void initialize(autoPlay);
 
     return () => {
       cancelled = true;
       onPlayerReady(null);
       onPlayingChange(false);
-      playerRef.current?.destroy?.();
-      playerRef.current = null;
-      mountRef.current?.replaceChildren();
+      commandsRef.current = null;
+      removePlayer();
     };
-  }, [videoId, onPlayerReady, onPlayingChange, retryKey]);
+  }, [videoId, onPlayerReady, onPlayingChange, retryKey, autoPlay]);
 
   return (
     <div className="player-frame" data-testid="player-shell" aria-label={`Плеер: ${title}`}>
-      <div ref={mountRef} className="youtube-mount" data-testid="youtube-player" />
+      <div ref={mountRef} className="youtube-mount" data-testid="youtube-player" hidden={status === "paused" || status === "ended"} inert={status === "paused" || status === "ended"} />
+
+      {(status === "paused" || status === "ended") && (
+        <div data-testid={`player-${status}`}>
+          {renderPauseMenu(status === "ended", () => commandsRef.current?.playVideo())}
+        </div>
+      )}
 
       {status === "loading" && (
         <div className="player-status" role="status">
