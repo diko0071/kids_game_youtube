@@ -19,6 +19,7 @@ export interface CartoonVideo {
   language: "ru" | "en" | "unknown";
   topicId: TopicId;
   durationLabel?: string;
+  searchTerms?: string[];
 }
 
 export const TOPICS: CartoonTopic[] = [
@@ -120,14 +121,88 @@ export const VIDEOS: CartoonVideo[] = [
     "title": "Leo the Truck - Planes and Boats",
     "channel": "KidsFirstTV",
     "language": "en",
-    "topicId": "vehicles"
+    "topicId": "vehicles",
+    "searchTerms": ["лео", "грузовичок", "самолет", "лодка"]
   },
   {
     "id": "qlmAp8kYJyY",
     "title": "Leo the Truck - Tow Truck and Bulldozer",
     "channel": "KidsFirstTV",
     "language": "en",
-    "topicId": "vehicles"
+    "topicId": "vehicles",
+    "searchTerms": ["лео", "грузовичок", "эвакуатор", "бульдозер"]
+  },
+  {
+    "id": "XkcB93Tm-EY",
+    "title": "Big Trucks in the Sand",
+    "channel": "KidsFirstTV",
+    "language": "en",
+    "topicId": "vehicles",
+    "durationLabel": "23:16",
+    "searchTerms": ["машинки", "грузовики", "песок", "стройка"]
+  },
+  {
+    "id": "I7YyvO95wSQ",
+    "title": "Helper Cars - Cars and Trucks",
+    "channel": "KidsFirstTV",
+    "language": "en",
+    "topicId": "vehicles",
+    "durationLabel": "18:21",
+    "searchTerms": ["машинки помощники", "грузовики", "спецтехника"]
+  },
+  {
+    "id": "a-dv3HUjU74",
+    "title": "Gecko's Garage - Excavator Rescue and Repair",
+    "channel": "Gecko's Garage",
+    "language": "en",
+    "topicId": "vehicles",
+    "durationLabel": "1:00:58",
+    "searchTerms": ["гекко", "экскаватор", "ремонт", "спасатели"]
+  },
+  {
+    "id": "630bt_YUrNU",
+    "title": "Dirty Diggers and Dump Trucks Car Wash",
+    "channel": "Gecko's Garage",
+    "language": "en",
+    "topicId": "vehicles",
+    "durationLabel": "24:41",
+    "searchTerms": ["гекко", "самосвал", "автомойка", "стройка"]
+  },
+  {
+    "id": "8ZIC3KuTd-E",
+    "title": "Formula E Racing Cars for Children",
+    "channel": "Toddler Fun Learning",
+    "language": "en",
+    "topicId": "vehicles",
+    "durationLabel": "10:06",
+    "searchTerms": ["гонки", "гоночные машины", "формула", "электромобиль"]
+  },
+  {
+    "id": "E2mQhr5V2xE",
+    "title": "Blippi Learns About Diggers",
+    "channel": "Blippi - Educational Videos for Kids",
+    "language": "en",
+    "topicId": "vehicles",
+    "durationLabel": "58:02",
+    "searchTerms": ["блиппи", "экскаватор", "стройка", "техника"]
+  },
+  {
+    "id": "AwQjZA-zKU0",
+    "title": "Blippi Learns Construction Vehicles",
+    "channel": "Blippi - Educational Videos for Kids",
+    "language": "en",
+    "topicId": "vehicles",
+    "durationLabel": "14:37",
+    "searchTerms": ["блиппи", "строительные машины", "экскаватор", "техника"]
+  },
+  {
+    "id": "H-6AX5GbAYo",
+    "title": "Thomas and the Emergency Cable",
+    "channel": "Thomas & Friends",
+    "language": "en",
+    "topicId": "vehicles",
+    "durationLabel": "10:56",
+    "searchTerms": ["томас", "паровоз", "поезд", "железная дорога"]
   },
   {
     "id": "LrAtBtQnvCE",
@@ -234,6 +309,9 @@ export const VIDEOS: CartoonVideo[] = [
 
 export const getTopic = (topicId: string | null): CartoonTopic | undefined =>
   TOPICS.find((topic) => topic.id === topicId);
+
+export const isTopicId = (value: string | null): value is TopicId =>
+  TOPICS.some((topic) => topic.id === value);
 
 export const getVideosForTopic = (topicId: TopicId): CartoonVideo[] =>
   VIDEOS.filter((video) => video.topicId === topicId);

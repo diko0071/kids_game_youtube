@@ -14,13 +14,13 @@ describe("cartoon catalog", () => {
     const expectedCounts = {
       stories: 4,
       learning: 3,
-      vehicles: 2,
+      vehicles: 10,
       songs: 10,
       adventures: 4,
     };
 
     expect(TOPICS).toHaveLength(5);
-    expect(VIDEOS).toHaveLength(23);
+    expect(VIDEOS).toHaveLength(31);
     for (const topic of TOPICS) {
       expect(getVideosForTopic(topic.id)).toHaveLength(expectedCounts[topic.id]);
       expect(getTopic(topic.id)).toEqual(topic);
