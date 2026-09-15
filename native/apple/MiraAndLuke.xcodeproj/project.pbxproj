@@ -1,0 +1,33 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+  A00000000000000000000001 = {isa = PBXProject; attributes = {LastUpgradeCheck = 2660; TargetAttributes = {A00000000000000000000002 = {CreatedOnToolsVersion = 26.6; ProvisioningStyle = Automatic; }; }; }; buildConfigurationList = A00000000000000000000003; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base, ru); mainGroup = A00000000000000000000004; productRefGroup = A00000000000000000000005; projectDirPath = ""; projectRoot = ""; targets = (A00000000000000000000002); };
+  A00000000000000000000002 = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000006; buildPhases = (A00000000000000000000007, A00000000000000000000008, A00000000000000000000009); buildRules = (); dependencies = (); name = MiraAndLuke; productName = MiraAndLuke; productReference = A00000000000000000000010; productType = "com.apple.product-type.application"; };
+  A00000000000000000000003 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000011, A00000000000000000000012); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+  A00000000000000000000006 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000013, A00000000000000000000014); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+  A00000000000000000000004 = {isa = PBXGroup; children = (A00000000000000000000015, A00000000000000000000016, A00000000000000000000017, A00000000000000000000018, A00000000000000000000019, A00000000000000000000005); sourceTree = "<group>"; };
+  A00000000000000000000005 = {isa = PBXGroup; children = (A00000000000000000000010); name = Products; sourceTree = "<group>"; };
+  A00000000000000000000007 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000020, A00000000000000000000021, A00000000000000000000022); runOnlyForDeploymentPostprocessing = 0; };
+  A00000000000000000000008 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+  A00000000000000000000009 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000023, A00000000000000000000024); runOnlyForDeploymentPostprocessing = 0; };
+  A00000000000000000000010 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MiraAndLuke.app; sourceTree = BUILT_PRODUCTS_DIR; };
+  A00000000000000000000015 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidsTubeApp.swift; sourceTree = "<group>"; };
+  A00000000000000000000016 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidsBrowser.swift; sourceTree = "<group>"; };
+  A00000000000000000000017 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationPolicy.swift; sourceTree = "<group>"; };
+  A00000000000000000000018 = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "../shared/player-policy.js"; sourceTree = "<group>"; };
+  A00000000000000000000019 = {isa = PBXFileReference; lastKnownFileType = text.json; path = "../shared/approved-catalog.json"; sourceTree = "<group>"; };
+  A00000000000000000000020 = {isa = PBXBuildFile; fileRef = A00000000000000000000015; };
+  A00000000000000000000021 = {isa = PBXBuildFile; fileRef = A00000000000000000000016; };
+  A00000000000000000000022 = {isa = PBXBuildFile; fileRef = A00000000000000000000017; };
+  A00000000000000000000023 = {isa = PBXBuildFile; fileRef = A00000000000000000000018; };
+  A00000000000000000000024 = {isa = PBXBuildFile; fileRef = A00000000000000000000019; };
+  A00000000000000000000011 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
+  A00000000000000000000012 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0; }; name = Release; };
+  A00000000000000000000013 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "Мира и Люк"; INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = ai.dkravt.kidstube.prototype; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+  A00000000000000000000014 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "Мира и Люк"; INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = ai.dkravt.kidstube.prototype; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+ };
+ rootObject = A00000000000000000000001;
+}

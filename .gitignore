@@ -37,3 +37,8 @@ next-env.d.ts
 .idea
 
 .env
+
+# Native build metadata
+__pycache__/
+xcuserdata/
+*.xcuserstate
