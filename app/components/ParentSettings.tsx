@@ -131,9 +131,9 @@ export default function ParentSettings({
           </fieldset>
           <section className="settings-section youtube-search-setting" aria-labelledby="youtube-search-title">
             <h3 id="youtube-search-title">Поиск на YouTube</h3>
-            <p>Откроется официальный YouTube в отдельной вкладке. Детский каталог останется закрытым и безопасным.</p>
+            <p>Поиск откроется отдельно, в YouTube или браузере. Там будет обычный YouTube без ограничений нашего каталога.</p>
             <form onSubmit={searchYouTube}>
-              <label><Search aria-hidden="true" /><span className="sr-only">Что найти на YouTube</span><input type="search" value={youtubeQuery} onChange={(event) => setYouTubeQuery(event.target.value)} placeholder="Например, машинки и экскаваторы" autoComplete="off" data-testid="youtube-search-input" /></label>
+              <label><Search aria-hidden="true" /><span className="sr-only">Что найти на YouTube</span><input type="search" maxLength={200} value={youtubeQuery} onChange={(event) => setYouTubeQuery(event.target.value)} placeholder="Например, машинки и экскаваторы" autoComplete="off" data-testid="youtube-search-input" /></label>
               <button type="submit" disabled={!youtubeQuery.trim()} data-testid="youtube-search-submit">Искать <ExternalLink aria-hidden="true" /></button>
             </form>
           </section>

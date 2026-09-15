@@ -75,6 +75,11 @@ final class KidsBrowserModel: NSObject, ObservableObject, WKNavigationDelegate, 
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if action.targetFrame == nil, let url = action.request.url,
+           policy.allowsExternalSearch(url, sourceURL: action.sourceFrame.request.url, mainFrame: action.sourceFrame.isMainFrame) {
+            decisionHandler(.allow)
+            return
+        }
         guard let target = action.targetFrame, let url = action.request.url,
               policy.allows(url, mainFrame: target.isMainFrame) else {
             blockedNavigations += 1
@@ -87,7 +92,17 @@ final class KidsBrowserModel: NSObject, ObservableObject, WKNavigationDelegate, 
         decisionHandler(.allow)
     }
 
-    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? { nil }
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        guard action.targetFrame == nil, let url = action.request.url,
+              policy.allowsExternalSearch(url, sourceURL: action.sourceFrame.request.url, mainFrame: action.sourceFrame.isMainFrame) else { return nil }
+        pauseForBackground()
+        #if os(iOS)
+        UIApplication.shared.open(url)
+        #else
+        NSWorkspace.shared.open(url)
+        #endif
+        return nil
+    }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { loading = false }
 
