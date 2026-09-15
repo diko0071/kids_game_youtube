@@ -32,15 +32,16 @@ struct NavigationPolicy {
         if currentPlaybackID != id { recommendedIDs = []; currentPlaybackID = id }
     }
 
-    // Session 01a09d4d-67ed-7d10-aa87-a5bd1f1c0c17: only two suggestions from the active embed can extend the catalog, and that grant expires when another video starts.
+    // Session 01a09d4d-67ed-7d10-aa87-a5bd1f1c0c17: only known English editions can occupy recommendation slots; an English title is not audio-language evidence.
     mutating func accept(_ batch: NativeRecommendationBatch) -> NativeRecommendationBatch? {
         guard batch.sourceVideoId == currentPlaybackID else { return nil }
         var ids = Set<String>()
-        let videos = batch.videos.prefix(2).filter { item in
+        let videos = batch.videos.prefix(20).filter { item in
+            catalog.catalogIDs.contains(item.id) &&
             item.id.range(of: "^[A-Za-z0-9_-]{11}$", options: .regularExpression) != nil &&
             item.id != currentPlaybackID && !item.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
             item.title.count <= 300 && (item.durationLabel?.count ?? 0) < 20 && ids.insert(item.id).inserted
-        }
+        }.prefix(2)
         recommendedIDs = Set(videos.map(\.id))
         return NativeRecommendationBatch(sourceVideoId: batch.sourceVideoId, videos: Array(videos))
     }

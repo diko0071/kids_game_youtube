@@ -10,17 +10,17 @@ import {
 } from "../app/data/catalog";
 
 describe("cartoon catalog", () => {
-  it("has a closed taxonomy of five populated topics and 41 videos", () => {
+  it("has a closed taxonomy of five populated topics and only English editions", () => {
     const expectedCounts = {
-      stories: 8,
-      learning: 8,
-      vehicles: 4,
-      songs: 13,
-      adventures: 8,
+      stories: 4,
+      learning: 3,
+      vehicles: 2,
+      songs: 10,
+      adventures: 4,
     };
 
     expect(TOPICS).toHaveLength(5);
-    expect(VIDEOS).toHaveLength(41);
+    expect(VIDEOS).toHaveLength(23);
     for (const topic of TOPICS) {
       expect(getVideosForTopic(topic.id)).toHaveLength(expectedCounts[topic.id]);
       expect(getTopic(topic.id)).toEqual(topic);
@@ -33,10 +33,12 @@ describe("cartoon catalog", () => {
     ids.forEach((id) => expect(isValidYouTubeId(id)).toBe(true));
   });
 
-  it("keeps the original shared deep link but uses an embeddable Luntik source", () => {
-    const legacyVideo = getVideo("OBjkNW11ujM");
-    expect(legacyVideo).toBeDefined();
-    expect(legacyVideo && getPlaybackId(legacyVideo)).toBe("oX_smlVKYUI");
+  it("removes Russian videos and their old playback aliases", () => {
+    expect(VIDEOS.every(video => video.language === "en")).toBe(true);
+    for (const id of ["OBjkNW11ujM", "oX_smlVKYUI", "ZcZVtt-baas", "650H2AQHuuY"]) {
+      expect(getVideo(id)).toBeUndefined();
+      expect(VIDEOS.some(video => getPlaybackId(video) === id)).toBe(false);
+    }
   });
 
   it("rejects malformed direct-link IDs", () => {

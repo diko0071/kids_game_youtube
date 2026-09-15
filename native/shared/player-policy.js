@@ -43,9 +43,7 @@
   const recommendationBridge = window.webkit?.messageHandlers?.kidsRecommendations;
   if (recommendationBridge) {
     let previousBatch = '';
-    let complete = false;
     const collect = () => {
-      if (complete) return;
       const sourceVideoId = location.pathname.split('/')[2];
       const cards = document.querySelectorAll('.ytFullscreenVideoRecommendationsRecommendation, .ytp-suggestion-link, .ytp-videowall-still');
       const videos = [];
@@ -61,12 +59,11 @@
         const durationLabel = (card.querySelector('.ytBadgeShapeText, .ytp-suggestion-duration, .ytp-videowall-still-info-duration')?.textContent || '').trim();
         seen.add(id);
         videos.push({ id, title, ...(durationLabel && durationLabel.length < 20 ? { durationLabel } : {}) });
-        if (videos.length === 2) break;
+        if (videos.length === 20) break;
       }
       if (!videos.length && previousBatch) return;
       const batch = JSON.stringify({ sourceVideoId, videos });
       if (batch !== previousBatch) { previousBatch = batch; recommendationBridge.postMessage(batch); }
-      complete = videos.length === 2;
     };
     document.addEventListener('DOMContentLoaded', collect, { once: true });
     document.addEventListener('playing', collect, true);
