@@ -42,6 +42,20 @@
 .kids-categories .category-vehicles { --category: #389e87; }
 .kids-categories .category-songs { --category: #d25f98; }
 .kids-categories .category-adventures { --category: #8d71ca; }
+.kids-discovery-bar { display: grid; grid-template-columns: minmax(180px,1fr) auto; align-items: center; gap: 10px; flex-shrink: 0; padding: 5px 3px 10px; }
+.kids-search { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 52px; padding: 0 14px; border: 1px solid #e8e0e5; border-radius: 18px; background: white; color: #82788a; box-shadow: 0 3px 0 rgba(67,53,77,.05); }
+.kids-search > svg { width: 21px; height: 21px; flex: 0 0 auto; }
+.kids-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--kids-ink); font: inherit; font-size: 15px; font-weight: 650; }
+.kids-search input::placeholder { color: #9a929f; font-weight: 550; }
+.kids-search input::-webkit-search-cancel-button { display: none; }
+.kids-search button { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; padding: 0; border: 0; border-radius: 50%; background: #f3edf1; color: #746b7b; cursor: pointer; }
+.kids-search button svg { width: 17px; height: 17px; }
+.kids-filter-button { display: grid; grid-template-columns: auto auto auto; align-items: center; gap: 9px; min-height: 52px; padding: 7px 12px; border: 1px solid #d9eee9; border-radius: 18px; background: #edf9f5; color: #246f5f; cursor: pointer; text-align: left; box-shadow: 0 3px 0 rgba(56,158,135,.12); }
+.kids-filter-button > svg { width: 21px; height: 21px; }
+.kids-filter-button > svg:last-child { width: 17px; height: 17px; }
+.kids-filter-button span { display: flex; flex-direction: column; min-width: 0; }
+.kids-filter-button small { color: #5d8f83; font-size: 10px; font-weight: 700; line-height: 1; }
+.kids-filter-button strong { max-width: 120px; overflow: hidden; color: #235a4f; font-size: 13px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
 .kids-catalog-caption { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; min-height: 40px; padding: 0 4px 10px; }
 .kids-catalog-caption h3 { font-size: 21px; font-weight: 850; margin: 0; }
 .kids-rail-buttons { display: none; gap: 8px; }
@@ -70,6 +84,37 @@
 .kids-catalog-compact.layout-feed .kids-card-list { grid-template-columns: 1fr; gap: 18px; }
 .kids-catalog-compact.layout-grid .kids-card-list { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 10px; }
 .kids-catalog-compact.layout-carousel .kids-video-card { flex-basis: 86%; }
+.kids-empty-search { grid-column: 1 / -1; display: flex; min-height: 220px; align-items: center; justify-content: center; flex-direction: column; padding: 28px; border: 2px dashed #e3d9e0; border-radius: 22px; color: #7b7182; text-align: center; }
+.kids-empty-search > svg { width: 38px; height: 38px; margin-bottom: 12px; color: #b5a8b1; }
+.kids-empty-search strong { color: var(--kids-ink); font-size: 19px; }
+.kids-empty-search span { margin-top: 5px; font-size: 13px; }
+.kids-empty-search button { margin-top: 16px; padding: 10px 15px; border: 0; border-radius: 14px; background: #f3e9ef; color: #783f58; font-weight: 800; cursor: pointer; }
+.kids-filter-overlay { position: fixed; z-index: 1200; display: grid; place-items: center; inset: 0; padding: 18px; background: rgba(34,27,43,.58); backdrop-filter: blur(7px); }
+.kids-filter-sheet { display: flex; overflow: hidden; width: min(680px,100%); max-height: min(760px,calc(100dvh - 36px)); flex-direction: column; border-radius: 28px; background: var(--kids-paper); box-shadow: 0 24px 80px rgba(30,20,35,.28); }
+.kids-filter-sheet header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 24px 16px; border-bottom: 1px solid #eadfe5; }
+.kids-filter-sheet header span { display: block; color: #8f7e8a; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.kids-filter-sheet header h3 { margin: 4px 0 0; color: var(--kids-ink); font-size: 25px; line-height: 1.1; }
+.kids-filter-sheet header button { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; padding: 0; border: 1px solid #e5dce2; border-radius: 15px; background: white; color: #6d6372; cursor: pointer; }
+.kids-filter-options { display: grid; overflow-y: auto; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; padding: 16px 18px 22px; }
+.kids-filter-options button { --category: #d95a78; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 12px; min-height: 84px; padding: 12px 14px; border: 2px solid transparent; border-radius: 19px; background: white; color: var(--kids-ink); cursor: pointer; text-align: left; }
+.kids-filter-options button > svg { width: 30px; height: 30px; color: var(--category); }
+.kids-filter-options button > span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.kids-filter-options button strong { font-size: 15px; }
+.kids-filter-options button small { overflow: hidden; color: #837889; font-size: 11px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.kids-filter-options button b { display: grid; min-width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #f3edf1; color: #766878; font-size: 12px; }
+.kids-filter-options button[aria-pressed="true"] { border-color: var(--category); background: color-mix(in srgb,var(--category) 8%,white); }
+.kids-filter-options .category-stories { --category: #368bc8; }
+.kids-filter-options .category-learning { --category: #bd901d; }
+.kids-filter-options .category-vehicles { --category: #389e87; }
+.kids-filter-options .category-songs { --category: #d25f98; }
+.kids-filter-options .category-adventures { --category: #8d71ca; }
+.youtube-search-setting form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 9px; }
+.youtube-search-setting form label { display: flex; min-width: 0; min-height: 52px; align-items: center; gap: 9px; padding: 0 13px; border: 1px solid var(--line); border-radius: 15px; background: #faf9fc; color: var(--ink-soft); }
+.youtube-search-setting form label svg { width: 20px; height: 20px; flex: 0 0 auto; }
+.youtube-search-setting input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; }
+.youtube-search-setting button { display: inline-flex; min-height: 52px; align-items: center; justify-content: center; gap: 7px; padding: 0 16px; border: 0; border-radius: 15px; background: #ff3154; color: white; font-weight: 820; cursor: pointer; }
+.youtube-search-setting button:disabled { opacity: .45; cursor: not-allowed; }
+.youtube-search-setting button svg { width: 18px; height: 18px; }
 .kids-app button:focus-visible, .kids-card-list:focus-visible { outline: 3px solid #287ab9; outline-offset: 3px; }
 .learning-setting-row { grid-template-columns: minmax(0,1fr) auto; }
 .menu-layout-options { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
@@ -92,6 +137,12 @@
   .kids-resume { padding: 12px 14px; font-size: 13px; gap: 5px; }
   .kids-resume svg { width: 17px; }
   .kids-parent-button { font-size: 11px; padding: 10px; }
+  .kids-discovery-bar { gap: 7px; padding-bottom: 8px; }
+  .kids-search { min-height: 48px; padding: 0 11px; border-radius: 16px; }
+  .kids-search input { font-size: 13px; }
+  .kids-filter-button { min-height: 48px; gap: 6px; padding: 6px 9px; border-radius: 16px; }
+  .kids-filter-button small { display: none; }
+  .kids-filter-button strong { max-width: 82px; font-size: 12px; }
   .kids-categories button { min-width: 73px; padding: 8px; }
   .kids-card-list { grid-template-columns: 1fr; gap: 24px; }
   .kids-catalog.layout-grid .kids-card-list { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 19px 12px; }
@@ -101,6 +152,13 @@
   .kids-catalog-compact .kids-categories { padding-bottom: 7px; }
   .kids-catalog-compact .kids-categories button { min-height: 50px; flex-direction: row; gap: 6px; min-width: auto; padding: 8px 12px; }
   .kids-catalog-compact .kids-categories svg { width: 20px; height: 20px; }
+  .kids-filter-overlay { place-items: end center; padding: 0; }
+  .kids-filter-sheet { width: 100%; max-height: 88dvh; border-radius: 27px 27px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+  .kids-filter-sheet header { padding: 19px 17px 14px; }
+  .kids-filter-sheet header h3 { font-size: 22px; }
+  .kids-filter-options { grid-template-columns: 1fr; padding: 12px 12px 18px; }
+  .kids-filter-options button { min-height: 72px; }
+  .youtube-search-setting form { grid-template-columns: 1fr; }
 }
 @media (orientation: landscape) and (max-height: 550px) {
   .kids-app .header-inner { height: 50px; padding: 0 max(18px,env(safe-area-inset-right)) 0 max(18px,env(safe-area-inset-left)); }
@@ -116,6 +174,13 @@
   .kids-categories { padding: 3px 2px 7px; gap: 6px; }
   .kids-categories button { flex-direction: row; gap: 6px; min-height: 42px; min-width: auto; padding: 8px 12px; font-size: 12px; border-radius: 15px; }
   .kids-categories svg { width: 20px; height: 20px; }
+  .kids-discovery-bar { gap: 7px; padding: 2px 2px 5px; }
+  .kids-search, .kids-filter-button { min-height: 40px; border-radius: 13px; }
+  .kids-search { padding: 0 10px; }
+  .kids-search input { font-size: 12px; }
+  .kids-filter-button { gap: 5px; padding: 4px 8px; }
+  .kids-filter-button small { display: none; }
+  .kids-filter-button strong { max-width: 90px; font-size: 11px; }
   .kids-catalog-caption { min-height: 28px; padding-bottom: 3px; }
   .kids-catalog-caption h3 { font-size: 15px; }
   .kids-rail-buttons button { width: 28px; height: 28px; }

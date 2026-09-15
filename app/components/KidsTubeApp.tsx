@@ -12,6 +12,7 @@ import {
   CartoonVideo,
   getPlaybackId,
   getVideo,
+  isTopicId,
   VIDEOS,
 } from "@/app/data/catalog";
 import { chooseNextGame } from "@/app/lib/game-engine";
@@ -48,6 +49,8 @@ export default function KidsTubeApp() {
   const resumeAfterSettingsRef = useRef(false);
   const previewLayout = searchParams.get("menu");
   const menuLayout = isMenuLayout(previewLayout) ? previewLayout : settings.menuLayout;
+  const requestedTopic = searchParams.get("theme");
+  const initialTopic = isTopicId(requestedTopic) ? requestedTopic : undefined;
 
   useEffect(() => {
     try {
@@ -186,7 +189,7 @@ export default function KidsTubeApp() {
             autoPlay={autoplayVideoId === currentVideo.id}
             initialMenu={requestedVideoId === null}
             renderPauseMenu={(ended, resume) => (
-              <KidsCatalog currentVideo={currentVideo} recommendations={recommendations} layout={menuLayout} ended={ended} home={requestedVideoId === null} onResume={resume} onSelect={openVideo} onSettings={openSettings} />
+              <KidsCatalog currentVideo={currentVideo} recommendations={recommendations} layout={menuLayout} initialTopic={initialTopic} ended={ended} home={requestedVideoId === null} onResume={resume} onSelect={openVideo} onSettings={openSettings} />
             )}
           />}
           {isPlaying && !activeGame && !showSettings && (
@@ -198,7 +201,7 @@ export default function KidsTubeApp() {
         </section>
 
         <aside className="video-sidebar kids-watch-catalog" aria-label="Следующие мультфильмы">
-          <KidsCatalog currentVideo={currentVideo} recommendations={recommendations} layout={menuLayout} compact onSelect={openVideo} />
+          <KidsCatalog currentVideo={currentVideo} recommendations={recommendations} layout={menuLayout} initialTopic={initialTopic} compact onSelect={openVideo} />
         </aside>
       </main>
 
