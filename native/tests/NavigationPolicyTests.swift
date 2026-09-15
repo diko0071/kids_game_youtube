@@ -67,6 +67,28 @@ struct NavigationPolicyTests {
         precondition(preview.allows(URL(string: "http://127.0.0.1:3017/?menu=grid")!, mainFrame: true))
         precondition(!preview.allows(URL(string: "http://127.0.0.1:3018/")!, mainFrame: true))
         precondition(!policy.allows(URL(string: "http://127.0.0.1:3017/")!, mainFrame: true))
+        let search = URL(string: "https://www.youtube.com/results?search_query=excavator")!
+        precondition(policy.allowsExternalSearch(search, sourceURL: policy.appURL, mainFrame: true))
+        precondition(!policy.allowsExternalSearch(search, sourceURL: policy.appURL, mainFrame: false))
+        precondition(!policy.allowsExternalSearch(search, sourceURL: URL(string: "https://www.youtube.com/embed/\(source)")!, mainFrame: true))
+        precondition(!policy.allowsExternalSearch(search, sourceURL: nil, mainFrame: true))
+        for raw in [
+            "https://www.youtube.com.evil.example/results?search_query=excavator",
+            "http://www.youtube.com/results?search_query=excavator",
+            "https://www.youtube.com:444/results?search_query=excavator",
+            "https://user@www.youtube.com/results?search_query=excavator",
+            "https://www.youtube.com/watch?v=\(source)",
+            "https://www.youtube.com/results?search_query=",
+            "https://www.youtube.com/results?search_query=%20",
+            "https://www.youtube.com/results?search_query=a&search_query=b",
+            "https://www.youtube.com/results?search_query=a&redirect=evil",
+            "https://www.youtube.com/results?search_query=a#fragment",
+            "https://www.youtube.com/results?search_query=\(String(repeating: "a", count: 201))",
+        ] {
+            precondition(!policy.allowsExternalSearch(URL(string: raw)!, sourceURL: policy.appURL, mainFrame: true), raw)
+            checks += 1
+        }
+        checks += 4
         checks += 18
         print("Navigation policy: \(checks + 2) checks passed, \(catalog.catalogIDs.count) catalog IDs and \(catalog.playbackIDs.count) playback IDs enumerated")
     }

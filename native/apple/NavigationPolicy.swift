@@ -45,6 +45,16 @@ struct NavigationPolicy {
         return NativeRecommendationBatch(sourceVideoId: batch.sourceVideoId, videos: Array(videos))
     }
 
+    // Session 01a09d4d-67ed-7d10-aa87-a5bd1f1c0c17: only the app's parent search may leave the WebView; YouTube frames cannot use this exception.
+    func allowsExternalSearch(_ url: URL, sourceURL: URL?, mainFrame: Bool) -> Bool {
+        guard mainFrame, let sourceURL, allows(sourceURL, mainFrame: true),
+              url.scheme == "https", url.host == "www.youtube.com", url.port == nil || url.port == 443,
+              url.user == nil, url.password == nil, url.fragment == nil, url.path == "/results",
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+              items.count == 1, items[0].name == "search_query", let query = items[0].value else { return false }
+        return !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && query.count <= 200
+    }
+
     // Session 01a09d4d-67ed-7d10-aa87-a5bd1f1c0c17: match parsed hosts and IDs, never URL prefixes that accept lookalike domains or an arbitrary watch link.
     func allows(_ url: URL, mainFrame: Bool) -> Bool {
         if !mainFrame && url.absoluteString == "about:blank" { return true }
