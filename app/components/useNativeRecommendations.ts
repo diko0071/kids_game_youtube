@@ -14,9 +14,9 @@ export default function useNativeRecommendations(currentVideo: CartoonVideo) {
     const receive = () => {
       const batch = parseRecommendations(window.__kidsRecommendations);
       if (!batch || batch.sourceVideoId !== getPlaybackId(currentVideo)) return;
-      setRecommendations(batch.videos.flatMap(video => {
+      setRecommendations(batch.videos.map(video => {
         const approved = getVideo(video.id);
-        return approved?.language === "en" ? [approved] : [];
+        return approved ?? { ...video, channel: "YouTube", language: "unknown", topicId: currentVideo.topicId };
       }));
     };
     setRecommendations([]);

@@ -256,7 +256,7 @@ export default function YouTubePlayer({
   const showMenu = initialMenu || status === "paused" || status === "ended";
 
   return (
-    <div className="player-frame" data-testid="player-shell" aria-label={`Плеер: ${title}`}>
+    <div className="player-frame" data-testid="player-shell" data-video-stage={!showMenu && status !== "error"} aria-label={`Плеер: ${title}`}>
       <div ref={mountRef} className="youtube-mount" data-testid="youtube-player" hidden={showMenu} inert={showMenu} />
 
       {showMenu && (

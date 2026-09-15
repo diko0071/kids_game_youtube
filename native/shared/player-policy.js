@@ -59,7 +59,7 @@
         const durationLabel = (card.querySelector('.ytBadgeShapeText, .ytp-suggestion-duration, .ytp-videowall-still-info-duration')?.textContent || '').trim();
         seen.add(id);
         videos.push({ id, title, ...(durationLabel && durationLabel.length < 20 ? { durationLabel } : {}) });
-        if (videos.length === 20) break;
+        if (videos.length === 2) break;
       }
       if (!videos.length && previousBatch) return;
       const batch = JSON.stringify({ sourceVideoId, videos });
