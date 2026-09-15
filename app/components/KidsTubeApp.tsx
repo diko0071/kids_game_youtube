@@ -1,31 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Heart,
-  Music2,
-  Pause,
-  Play,
-  Rocket,
-  Settings,
-  Sparkles,
-  Truck,
-} from "lucide-react";
+import { Pause, Play, Settings } from "lucide-react";
 import LearningGame from "./LearningGame";
 import ParentSettings from "./ParentSettings";
-import PauseCatalog from "./PauseCatalog";
+import KidsCatalog from "./KidsCatalog";
+import useNativeRecommendations from "./useNativeRecommendations";
 import YouTubePlayer, { YouTubePlayerHandle } from "./YouTubePlayer";
 import {
-  CartoonTopic,
   CartoonVideo,
-  getTopic,
   getPlaybackId,
-  getThumbnailUrl,
   getVideo,
-  getVideosForTopic,
-  TOPICS,
-  TopicId,
   VIDEOS,
 } from "@/app/data/catalog";
 import { chooseNextGame } from "@/app/lib/game-engine";
@@ -35,97 +21,20 @@ import {
   GameType,
   normalizeSettings,
   SETTINGS_STORAGE_KEY,
+  isMenuLayout,
 } from "@/app/lib/settings";
-
-const TOPIC_ICONS = {
-  heart: Heart,
-  sparkles: Sparkles,
-  truck: Truck,
-  music: Music2,
-  rocket: Rocket,
-};
-
-function TopicChoice({
-  topic,
-  selected,
-  videoCount,
-  onSelect,
-}: {
-  topic: CartoonTopic;
-  selected: boolean;
-  videoCount: number;
-  onSelect: () => void;
-}) {
-  const Icon = TOPIC_ICONS[topic.icon];
-
-  return (
-    <button
-      type="button"
-      className={`topic-choice tone-${topic.tone}`}
-      onClick={onSelect}
-      aria-label={`${topic.title}, ${videoCount} видео`}
-      aria-pressed={selected}
-      aria-controls="video-list"
-      data-testid={`topic-${topic.id}`}
-    >
-      <Icon aria-hidden="true" />
-      <span>{topic.shortTitle}</span>
-    </button>
-  );
-}
-
-function VideoListItem({
-  video,
-  selected,
-  onSelect,
-}: {
-  video: CartoonVideo;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={`video-list-item ${selected ? "selected" : ""}`}
-      onClick={onSelect}
-      aria-current={selected ? "true" : undefined}
-      data-testid={`video-card-${video.id}`}
-    >
-      <span className="video-list-thumbnail">
-        <img
-          src={getThumbnailUrl(getPlaybackId(video))}
-          alt=""
-          loading="lazy"
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
-          }}
-        />
-        <span className="video-list-play" aria-hidden="true">
-          <Play fill="currentColor" />
-        </span>
-        {video.durationLabel && <span className="video-list-duration">{video.durationLabel}</span>}
-      </span>
-      <span className="video-list-copy">
-        <strong>{video.title}</strong>
-        <span>{video.channel}</span>
-      </span>
-    </button>
-  );
-}
 
 export default function KidsTubeApp() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedVideoId = searchParams.get("video");
-  const requestedTopic = getTopic(searchParams.get("theme"));
-  const knownVideo = getVideo(requestedVideoId);
-  // Session 01a09d4d-67ed-7d10-aa87-a5bd1f1c0c17: URL syntax is not parental approval; only catalog identities may reach the player.
+  const [selectedRecommendation, setSelectedRecommendation] = useState<CartoonVideo | null>(null);
+  const knownVideo = getVideo(requestedVideoId) ?? (selectedRecommendation?.id === requestedVideoId ? selectedRecommendation : undefined);
+  // Session 01a09d4d-67ed-7d10-aa87-a5bd1f1c0c17: a URL alone grants no playback; extra IDs enter only through a selected native recommendation.
   const blockedVideo = requestedVideoId !== null && !knownVideo;
   const currentVideo = knownVideo ?? VIDEOS[0];
+  const recommendations = useNativeRecommendations(currentVideo);
 
-  const [activeTopicId, setActiveTopicId] = useState<TopicId>(
-    requestedTopic?.id ?? currentVideo.topicId,
-  );
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
@@ -137,11 +46,8 @@ export default function KidsTubeApp() {
   const previousGameRef = useRef<GameType | null>(null);
   const resumeAfterGameRef = useRef(false);
   const resumeAfterSettingsRef = useRef(false);
-  const activeTopic = getTopic(activeTopicId) ?? TOPICS[0];
-  const visibleVideos = useMemo(
-    () => getVideosForTopic(activeTopicId),
-    [activeTopicId],
-  );
+  const previewLayout = searchParams.get("menu");
+  const menuLayout = isMenuLayout(previewLayout) ? previewLayout : settings.menuLayout;
 
   useEffect(() => {
     try {
@@ -159,9 +65,6 @@ export default function KidsTubeApp() {
     setIsPlaying(false);
   }, [currentVideo.id, blockedVideo]);
 
-  useEffect(() => {
-    setActiveTopicId(requestedTopic?.id ?? currentVideo.topicId);
-  }, [currentVideo.topicId, requestedTopic?.id]);
 
   const handlePlayingChange = useCallback((playing: boolean) => {
     playingRef.current = playing;
@@ -210,7 +113,7 @@ export default function KidsTubeApp() {
 
   // Session 019ff4e6-45a8-7993-ba18-825ca748ca24: only real YouTube PLAYING time advances the hidden learning timer.
   useEffect(() => {
-    if (!isPlaying || activeGame) return;
+    if (!settings.learningEnabled || !isPlaying || activeGame) return;
     const timer = window.setInterval(() => {
       watchedSecondsRef.current += 1;
       if (watchedSecondsRef.current >= intervalSeconds) {
@@ -220,42 +123,38 @@ export default function KidsTubeApp() {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [activeGame, intervalSeconds, isPlaying, startGame]);
+  }, [activeGame, intervalSeconds, isPlaying, startGame, settings.learningEnabled]);
 
   const saveSettings = (nextSettings: AppSettings) => {
     const safeSettings = normalizeSettings(nextSettings);
     setSettings(safeSettings);
     window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(safeSettings));
     watchedSecondsRef.current = 0;
-  };
-
-  const openVideo = (video: CartoonVideo) => {
-    if (blockedVideo || video.id !== currentVideo.id) {
-      setAutoplayVideoId(video.id);
-      router.push(`/?theme=${video.topicId}&video=${video.id}`, { scroll: false });
-    } else {
-      playerRef.current?.playVideo();
+    if (previewLayout) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("menu");
+      router.replace(`/?${params.toString()}`, { scroll: false });
     }
   };
 
-  const openTopic = (topic: CartoonTopic) => {
-    setActiveTopicId(topic.id);
-
-    // Session 019ff4e6-45a8-7993-ba18-825ca748ca24: level one only filters level two; playback changes only after an explicit video choice.
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("theme", topic.id);
-    if (!blockedVideo) params.set("video", currentVideo.id);
-    window.history.pushState(null, "", `/?${params.toString()}`);
+  const openVideo = (video: CartoonVideo) => {
+    if (!getVideo(video.id) && !recommendations.some(item => item.id === video.id) && selectedRecommendation?.id !== video.id) return;
+    if (!getVideo(video.id)) setSelectedRecommendation(video);
+    if (requestedVideoId === null || blockedVideo || video.id !== currentVideo.id) setAutoplayVideoId(video.id);
+    else playerRef.current?.playVideo();
+    const params = new URLSearchParams({ theme: video.topicId, video: video.id });
+    if (isMenuLayout(previewLayout)) params.set("menu", previewLayout);
+    router.push(`/?${params.toString()}`, { scroll: false });
   };
 
   return (
-    <div className="app-shell" data-testid="app-root">
+    <div className="app-shell kids-app" data-testid="app-root">
       <header className="site-header">
         <div className="header-inner">
-          <div className="brand" aria-label="МультиИгра">
+          <button type="button" className="brand kids-home-button" aria-label="Открыть меню мультфильмов" onClick={() => playerRef.current?.pauseVideo()}>
             <span className="brand-mark" aria-hidden="true"><Play fill="currentColor" /></span>
-            <span><strong>Мульти</strong>Игра</span>
-          </div>
+            <span><strong>Мира</strong> и Люк</span>
+          </button>
           <button
             type="button"
             className="header-settings"
@@ -285,8 +184,9 @@ export default function KidsTubeApp() {
             onPlayingChange={handlePlayingChange}
             onPlayerReady={handlePlayerReady}
             autoPlay={autoplayVideoId === currentVideo.id}
+            initialMenu={requestedVideoId === null}
             renderPauseMenu={(ended, resume) => (
-              <PauseCatalog currentVideo={currentVideo} ended={ended} onResume={resume} onSelect={openVideo} />
+              <KidsCatalog currentVideo={currentVideo} recommendations={recommendations} layout={menuLayout} ended={ended} home={requestedVideoId === null} onResume={resume} onSelect={openVideo} onSettings={openSettings} />
             )}
           />}
           {isPlaying && !activeGame && !showSettings && (
@@ -297,61 +197,14 @@ export default function KidsTubeApp() {
           )}
         </section>
 
-        <aside className="video-sidebar" aria-labelledby="picker-title">
-          <h1 id="picker-title" className="sr-only">Выбор мультфильма</h1>
-          <label className="compact-topic sidebar-topic-compact">
-            <span className="sr-only">Тип мультфильма</span>
-            <select aria-label="Тип мультфильма при просмотре" value={activeTopicId} onChange={(event) => {
-              const selected = getTopic(event.target.value);
-              if (selected) openTopic(selected);
-            }}>
-              {TOPICS.map((topic) => <option key={topic.id} value={topic.id}>Тип: {topic.shortTitle}</option>)}
-            </select>
-          </label>
-
-          <section className="picker-step topic-step" aria-labelledby="topic-step-title">
-            <div className="picker-step-heading">
-              <span className="picker-step-number" aria-hidden="true">1</span>
-              <h2 id="topic-step-title">Тип мультфильма</h2>
-            </div>
-            <div className="topic-choices" role="group" aria-label="Тип мультфильма">
-              {TOPICS.map((topic) => (
-                <TopicChoice
-                  key={topic.id}
-                  topic={topic}
-                  selected={topic.id === activeTopicId}
-                  videoCount={getVideosForTopic(topic.id).length}
-                  onSelect={() => openTopic(topic)}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section className="picker-step video-step" aria-labelledby="video-step-title">
-            <div className="picker-step-heading video-step-heading">
-              <span className="picker-step-number" aria-hidden="true">2</span>
-              <div>
-                <h2 id="video-step-title">Мультфильм</h2>
-                <p aria-live="polite">{activeTopic.title} · {visibleVideos.length} видео</p>
-              </div>
-            </div>
-            <div className="video-list" id="video-list" key={activeTopicId}>
-              {visibleVideos.map((video) => (
-                <VideoListItem
-                  key={video.id}
-                  video={video}
-                  selected={!blockedVideo && video.id === currentVideo.id}
-                  onSelect={() => openVideo(video)}
-                />
-              ))}
-            </div>
-          </section>
+        <aside className="video-sidebar kids-watch-catalog" aria-label="Следующие мультфильмы">
+          <KidsCatalog currentVideo={currentVideo} recommendations={recommendations} layout={menuLayout} compact onSelect={openVideo} />
         </aside>
       </main>
 
       {showSettings && (
         <ParentSettings
-          settings={settings}
+          settings={{ ...settings, menuLayout }}
           onClose={closeSettings}
           onSave={saveSettings}
           onTestGame={(type) => {

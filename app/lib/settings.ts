@@ -3,14 +3,24 @@ export const GAME_TYPES = ["letters", "counting", "colors", "words", "syllables"
 export type GameType = (typeof GAME_TYPES)[number];
 
 export interface AppSettings {
+  menuLayout: MenuLayout;
+  learningEnabled: boolean;
   intervalMinutes: number;
   soundEnabled: boolean;
   enabledGames: GameType[];
 }
 
+export const MENU_LAYOUTS = ["feed", "carousel", "grid"] as const;
+export type MenuLayout = (typeof MENU_LAYOUTS)[number];
+export function isMenuLayout(value: unknown): value is MenuLayout {
+  return MENU_LAYOUTS.includes(value as MenuLayout);
+}
+
 export const INTERVAL_OPTIONS = [1, 3, 5, 10, 15] as const;
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  menuLayout: "feed",
+  learningEnabled: false,
   intervalMinutes: 5,
   soundEnabled: true,
   enabledGames: [...GAME_TYPES],
@@ -37,6 +47,8 @@ export function normalizeSettings(value: unknown): AppSettings {
     : [...DEFAULT_SETTINGS.enabledGames];
 
   return {
+    menuLayout: isMenuLayout(candidate.menuLayout) ? candidate.menuLayout : DEFAULT_SETTINGS.menuLayout,
+    learningEnabled: candidate.learningEnabled === true,
     intervalMinutes,
     soundEnabled:
       typeof candidate.soundEnabled === "boolean"

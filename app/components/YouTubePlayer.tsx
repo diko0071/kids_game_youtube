@@ -11,6 +11,7 @@ interface YouTubePlayerProps {
   onPlayerReady: (player: YouTubePlayerHandle | null) => void;
   renderPauseMenu: (ended: boolean, resume: () => void) => ReactNode;
   autoPlay?: boolean;
+  initialMenu?: boolean;
 }
 
 export interface YouTubePlayerHandle {
@@ -95,9 +96,11 @@ export default function YouTubePlayer({
   onPlayerReady,
   renderPauseMenu,
   autoPlay = false,
+  initialMenu = false,
 }: YouTubePlayerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const commandsRef = useRef<YouTubePlayerHandle | null>(null);
+  const initialMenuRef = useRef(initialMenu);
   const [status, setStatus] = useState<"loading" | "ready" | "paused" | "ended" | "error">("loading");
   const [errorCode, setErrorCode] = useState<number | null>(null);
   const [retryKey, setRetryKey] = useState(0);
@@ -137,7 +140,7 @@ export default function YouTubePlayer({
       held = true;
       restartOnResume = ended;
       resumePending = false;
-      player?.pauseVideo();
+      player?.pauseVideo?.();
       onPlayingChange(false);
       setStatus(ended ? "ended" : "paused");
     };
@@ -176,6 +179,11 @@ export default function YouTubePlayer({
               if (cancelled || token !== generation) return;
               player = target;
               if (held) { target.pauseVideo(); return; }
+              if (initialMenuRef.current && !resume) {
+                initialMenuRef.current = false;
+                hold();
+                return;
+              }
               setStatus("ready");
               if (resume) {
                 if (position > 0) target.seekTo(position, true);
@@ -185,7 +193,7 @@ export default function YouTubePlayer({
             onStateChange: ({ data }) => {
               if (cancelled || token !== generation) return;
               if (held) {
-                if (data === 1) player?.pauseVideo();
+                if (data === 1) player?.pauseVideo?.();
                 return;
               }
               if (data === 1) { hasPlayed = true; resumePending = false; }
@@ -226,7 +234,7 @@ export default function YouTubePlayer({
         } else if (held) {
           void initialize(true);
         } else {
-          player?.playVideo();
+          player?.playVideo?.();
         }
       },
     };
@@ -243,17 +251,19 @@ export default function YouTubePlayer({
     };
   }, [videoId, onPlayerReady, onPlayingChange, retryKey, autoPlay]);
 
+  const showMenu = initialMenu || status === "paused" || status === "ended";
+
   return (
     <div className="player-frame" data-testid="player-shell" aria-label={`Плеер: ${title}`}>
-      <div ref={mountRef} className="youtube-mount" data-testid="youtube-player" hidden={status === "paused" || status === "ended"} inert={status === "paused" || status === "ended"} />
+      <div ref={mountRef} className="youtube-mount" data-testid="youtube-player" hidden={showMenu} inert={showMenu} />
 
-      {(status === "paused" || status === "ended") && (
+      {showMenu && (
         <div data-testid={`player-${status}`}>
           {renderPauseMenu(status === "ended", () => commandsRef.current?.playVideo())}
         </div>
       )}
 
-      {status === "loading" && (
+      {status === "loading" && !showMenu && (
         <div className="player-status" role="status">
           <LoaderCircle className="spin" aria-hidden="true" />
           <strong>Готовим мультфильм…</strong>
@@ -261,7 +271,7 @@ export default function YouTubePlayer({
         </div>
       )}
 
-      {status === "error" && (
+      {status === "error" && !showMenu && (
         <div className="player-status player-status-error" role="alert" data-testid="player-error">
           <AlertTriangle aria-hidden="true" />
           <strong>Этот мультфильм сейчас не открылся</strong>

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "./kids.css";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -20,8 +21,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "МультиИгра — мультфильмы с развивающими паузами",
-  description: "Выбирайте мультфильм по теме и проходите короткие развивающие игры между просмотрами.",
+  title: "Мира и Люк - любимые мультфильмы",
+  description: "Любимые мультики, песенки и приключения в удобном детском каталоге.",
   appleWebApp: {
     capable: true,
     title: "Мира и Люк",
