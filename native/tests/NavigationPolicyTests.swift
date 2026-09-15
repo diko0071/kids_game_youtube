@@ -37,8 +37,8 @@ struct NavigationPolicyTests {
         precondition(!policy.allows(URL(string: "about:blank")!, mainFrame: true))
         var dynamic = NavigationPolicy(catalog: catalog)
         let source = catalog.playbackIDs[0]
-        let first = NativeRecommendation(id: "testVideo01", title: "First", durationLabel: "1:00")
-        let second = NativeRecommendation(id: "testVideo02", title: "Second", durationLabel: nil)
+        let first = NativeRecommendation(id: catalog.catalogIDs[1], title: "First", durationLabel: "1:00")
+        let second = NativeRecommendation(id: catalog.catalogIDs[2], title: "Second", durationLabel: nil)
         let third = NativeRecommendation(id: "testVideo03", title: "Third", durationLabel: nil)
         let batch = NativeRecommendationBatch(sourceVideoId: source, videos: [first, second, third])
         precondition(dynamic.accept(batch) == nil)
@@ -52,18 +52,22 @@ struct NavigationPolicyTests {
         precondition(dynamic.currentPlaybackID == first.id && dynamic.recommendedIDs.isEmpty)
         precondition(dynamic.accept(batch) == nil)
         precondition(dynamic.allows(URL(string: "https://www.youtube.com/embed/\(first.id)")!, mainFrame: false))
-        precondition(!dynamic.allows(URL(string: "https://www.youtube.com/embed/\(second.id)")!, mainFrame: false))
+        precondition(dynamic.allows(URL(string: "https://www.youtube.com/embed/\(second.id)")!, mainFrame: false))
         dynamic.beginPlayback(third.id)
         precondition(dynamic.currentPlaybackID == first.id)
         dynamic.beginPlayback(source)
         let invalid = NativeRecommendation(id: "invalid", title: "Bad", durationLabel: nil)
         precondition(dynamic.accept(NativeRecommendationBatch(sourceVideoId: source, videos: [invalid, first, third]))?.videos.map(\.id) == [first.id])
         precondition(dynamic.accept(NativeRecommendationBatch(sourceVideoId: source, videos: [first, first]))?.videos.count == 1)
+        let russian = NativeRecommendation(id: "ZcZVtt-baas", title: "English title", durationLabel: nil)
+        precondition(dynamic.accept(NativeRecommendationBatch(sourceVideoId: source, videos: [russian, third, first, second]))?.videos.map(\.id) == [first.id, second.id])
+        precondition(!dynamic.allows(URL(string: "https://www.youtube.com/embed/ZcZVtt-baas")!, mainFrame: false))
+        precondition(!dynamic.allows(URL(string: "https://kids-game-youtube.vercel.app/?video=OBjkNW11ujM")!, mainFrame: true))
         let preview = NavigationPolicy(catalog: catalog, appURL: URL(string: "http://127.0.0.1:3017/")!)
         precondition(preview.allows(URL(string: "http://127.0.0.1:3017/?menu=grid")!, mainFrame: true))
         precondition(!preview.allows(URL(string: "http://127.0.0.1:3018/")!, mainFrame: true))
         precondition(!policy.allows(URL(string: "http://127.0.0.1:3017/")!, mainFrame: true))
-        checks += 16
+        checks += 19
         print("Navigation policy: \(checks + 2) checks passed, \(catalog.catalogIDs.count) catalog IDs and \(catalog.playbackIDs.count) playback IDs enumerated")
     }
 }

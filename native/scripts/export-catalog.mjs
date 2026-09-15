@@ -5,6 +5,7 @@ import { transformSync } from 'esbuild';
 const source = readFileSync(new URL('../../app/data/catalog.ts', import.meta.url), 'utf8');
 const { code } = transformSync(source, { loader: 'ts', format: 'esm' });
 const { VIDEOS } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+if (VIDEOS.some(video => video.language !== "en")) throw new Error("Native release requires an English-only catalog");
 const value = JSON.stringify({ catalogIDs: VIDEOS.map(v => v.id), playbackIDs: [...new Set(VIDEOS.map(v => v.playbackId ?? v.id))] }, null, 2) + '\n';
 const target = new URL('../shared/approved-catalog.json', import.meta.url);
 if (process.argv.includes('--check')) {

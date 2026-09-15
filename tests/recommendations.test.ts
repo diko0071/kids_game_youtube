@@ -13,12 +13,23 @@ describe("two YouTube recommendations followed by the family catalog", () => {
     expect(buildForYou(VIDEOS, [])).toEqual(VIDEOS);
     expect(buildForYou(VIDEOS, [VIDEOS[1]], VIDEOS[1].id)).toEqual(VIDEOS);
   });
+  it("skips Russian and unknown videos before taking the first two approved recommendations", () => {
+    const result = parseRecommendations({ sourceVideoId: VIDEOS[0].id, videos: [
+      { id: "ZcZVtt-baas", title: "Masha - English looking title" },
+      { id: "testVideo01", title: "Unknown English title" },
+      { id: VIDEOS[1].id, title: VIDEOS[1].title },
+      { id: VIDEOS[2].id, title: VIDEOS[2].title },
+      { id: VIDEOS[3].id, title: VIDEOS[3].title },
+    ] });
+    expect(result?.videos.map(v => v.id)).toEqual([VIDEOS[1].id, VIDEOS[2].id]);
+    expect(buildForYou(VIDEOS, [{ ...VIDEOS[0], id: "ZcZVtt-baas", language: "en" }])).toEqual(VIDEOS);
+  });
   it("validates IDs and titles, drops duplicates, and cannot grant a third slot", () => {
     expect(parseRecommendations({ sourceVideoId: VIDEOS[0].id, videos: [
       { id: VIDEOS[1].id, title: VIDEOS[1].title },
       { id: VIDEOS[1].id, title: VIDEOS[1].title },
       { id: VIDEOS[2].id, title: VIDEOS[2].title },
-    ] })?.videos).toHaveLength(1);
+    ] })?.videos).toHaveLength(2);
     expect(parseRecommendations({ sourceVideoId: "invalid", videos: [] })).toBeNull();
     expect(parseRecommendations({ sourceVideoId: VIDEOS[0].id, videos: [{ id: VIDEOS[1].id, title: "" }] })?.videos).toEqual([]);
   });

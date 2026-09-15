@@ -172,6 +172,8 @@ export default function YouTubePlayer({
             iv_load_policy: 3,
             playsinline: 1,
             rel: 0,
+            hl: "en",
+            cc_lang_pref: "en",
             origin: window.location.origin,
           },
           events: {
