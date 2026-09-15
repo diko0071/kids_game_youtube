@@ -16,7 +16,7 @@ export interface CartoonVideo {
   playbackId?: string;
   title: string;
   channel: string;
-  language: "ru" | "en";
+  language: "ru" | "en" | "unknown";
   topicId: TopicId;
   durationLabel?: string;
 }
