@@ -34,7 +34,7 @@ def guarded(command):
         raise subprocess.CalledProcessError(process.returncode, command)
 
 
-def build(platform):
+def build(platform, preview_url=None):
     sdk_name = "macosx" if platform == "mac" else "iphoneos"
     sdk = subprocess.check_output(["xcrun", "--sdk", sdk_name, "--show-sdk-path"], text=True).strip()
     target = "arm64-apple-macos14.0" if platform == "mac" else "arm64-apple-ios17.0"
@@ -59,6 +59,12 @@ def build(platform):
     }
     if platform == "mac":
         info.update({"LSMinimumSystemVersion": "14.0", "NSHighResolutionCapable": True})
+        if preview_url:
+            from urllib.parse import urlparse
+            url = urlparse(preview_url)
+            if url.scheme != "http" or url.hostname != "127.0.0.1" or url.username or url.password:
+                raise ValueError("The debug preview must use HTTP on 127.0.0.1")
+            info.update({"KidsPreviewURL": preview_url, "NSAppTransportSecurity": {"NSAllowsLocalNetworking": True}})
     else:
         info.update({"MinimumOSVersion": "17.0", "LSRequiresIPhoneOS": True, "UIDeviceFamily": [1, 2],
                      "UILaunchScreen": {}, "UISupportedInterfaceOrientations": [
@@ -73,6 +79,9 @@ def build(platform):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("platform", choices=["mac", "ios"])
+    parser.add_argument("--preview-url", help="Mac Debug only: a 127.0.0.1 preview server")
     args = parser.parse_args()
     subprocess.run(["node", "native/scripts/export-catalog.mjs", "--check"], cwd=ROOT, check=True)
-    build(args.platform)
+    if args.preview_url and args.platform != "mac":
+        parser.error("--preview-url is only available for the Mac Debug build")
+    build(args.platform, args.preview_url)

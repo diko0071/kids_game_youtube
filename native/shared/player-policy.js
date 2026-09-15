@@ -40,7 +40,41 @@
   }
   document.addEventListener('contextmenu', event => event.preventDefault(), true);
 
-  // The debug host exposes DOM evidence only; there is no native command bridge or credential access.
+  const recommendationBridge = window.webkit?.messageHandlers?.kidsRecommendations;
+  if (recommendationBridge) {
+    let previousBatch = '';
+    let complete = false;
+    const collect = () => {
+      if (complete) return;
+      const sourceVideoId = location.pathname.split('/')[2];
+      const cards = document.querySelectorAll('.ytFullscreenVideoRecommendationsRecommendation, .ytp-suggestion-link, .ytp-videowall-still');
+      const videos = [];
+      const seen = new Set([sourceVideoId]);
+      for (const card of cards) {
+        const link = card.matches('a[href]') ? card : card.querySelector('a[href*="watch?"]');
+        if (!link) continue;
+        let url;
+        try { url = new URL(link.getAttribute('href'), location.origin); } catch { continue; }
+        const id = url.searchParams.get('v');
+        const title = (card.querySelector('.media-item-headline, .ytp-suggestion-title, .ytp-videowall-still-info-title')?.textContent || link.getAttribute('title') || '').trim();
+        if (!hosts.has(url.hostname) || url.pathname !== '/watch' || !id || !/^[\w-]{11}$/.test(id) || seen.has(id) || !title || title.length > 300) continue;
+        const durationLabel = (card.querySelector('.ytBadgeShapeText, .ytp-suggestion-duration, .ytp-videowall-still-info-duration')?.textContent || '').trim();
+        seen.add(id);
+        videos.push({ id, title, ...(durationLabel && durationLabel.length < 20 ? { durationLabel } : {}) });
+        if (videos.length === 2) break;
+      }
+      if (!videos.length && previousBatch) return;
+      const batch = JSON.stringify({ sourceVideoId, videos });
+      if (batch !== previousBatch) { previousBatch = batch; recommendationBridge.postMessage(batch); }
+      complete = videos.length === 2;
+    };
+    document.addEventListener('DOMContentLoaded', collect, { once: true });
+    document.addEventListener('playing', collect, true);
+    document.addEventListener('pause', collect, true);
+    setInterval(collect, 2000);
+  }
+
+  // The debug host exposes DOM evidence only; neither bridge executes commands or exposes credentials.
   const reporter = window.webkit?.messageHandlers?.kidsDiagnostics;
   if (reporter) {
     const report = () => {

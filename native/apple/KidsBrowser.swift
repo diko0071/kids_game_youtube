@@ -18,6 +18,7 @@ final class KidsBrowserModel: NSObject, ObservableObject, WKNavigationDelegate, 
     @Published var blockedNavigations = 0
     private(set) var webView: WKWebView!
     private var policy: NavigationPolicy!
+    private var appURL = URL(string: "https://kids-game-youtube.vercel.app/")!
 
     override init() {
         super.init()
@@ -26,9 +27,16 @@ final class KidsBrowserModel: NSObject, ObservableObject, WKNavigationDelegate, 
                   let scriptURL = Bundle.main.url(forResource: "player-policy", withExtension: "js") else {
                 throw CocoaError(.fileNoSuchFile)
             }
-            policy = NavigationPolicy(catalog: try JSONDecoder().decode(ApprovedCatalog.self, from: Data(contentsOf: catalogURL)))
+            #if DEBUG && os(macOS)
+            if let raw = Bundle.main.object(forInfoDictionaryKey: "KidsPreviewURL") as? String,
+               let url = URL(string: raw), url.scheme == "http", url.host == "127.0.0.1" {
+                appURL = url
+            }
+            #endif
+            policy = NavigationPolicy(catalog: try JSONDecoder().decode(ApprovedCatalog.self, from: Data(contentsOf: catalogURL)), appURL: appURL)
             let controller = WKUserContentController()
             controller.addUserScript(WKUserScript(source: try String(contentsOf: scriptURL, encoding: .utf8), injectionTime: .atDocumentStart, forMainFrameOnly: false))
+            controller.add(WeakDiagnosticsHandler(self), name: "kidsRecommendations")
             #if DEBUG
             controller.add(WeakDiagnosticsHandler(self), name: "kidsDiagnostics")
             #endif
@@ -59,7 +67,7 @@ final class KidsBrowserModel: NSObject, ObservableObject, WKNavigationDelegate, 
         guard webView != nil else { return }
         error = nil
         loading = true
-        webView.load(URLRequest(url: URL(string: "https://\(NavigationPolicy.appHost)/")!))
+        webView.load(URLRequest(url: appURL))
     }
 
     func pauseForBackground() {
@@ -72,6 +80,9 @@ final class KidsBrowserModel: NSObject, ObservableObject, WKNavigationDelegate, 
             blockedNavigations += 1
             decisionHandler(.cancel)
             return
+        }
+        if !target.isMainFrame, url.path.hasPrefix("/embed/") {
+            policy.beginPlayback(url.lastPathComponent)
         }
         decisionHandler(.allow)
     }
@@ -96,10 +107,19 @@ final class KidsBrowserModel: NSObject, ObservableObject, WKNavigationDelegate, 
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard !message.frameInfo.isMainFrame,
+              ["www.youtube.com", "youtube.com", "www.youtube-nocookie.com"].contains(message.frameInfo.securityOrigin.host),
+              let frameURL = message.frameInfo.request.url, frameURL.path == "/embed/\(policy.currentPlaybackID ?? "")",
+              let text = message.body as? String, text.utf8.count < 8192 else { return }
+        if message.name == "kidsRecommendations" {
+            guard let data = text.data(using: .utf8), let batch = try? JSONDecoder().decode(NativeRecommendationBatch.self, from: data),
+                  let accepted = policy.accept(batch), let encoded = try? JSONEncoder().encode(accepted),
+                  let json = String(data: encoded, encoding: .utf8), webView.url?.host == appURL.host else { return }
+            webView.evaluateJavaScript("window.__kidsRecommendations = \(json); window.dispatchEvent(new Event('kids-recommendations'));", completionHandler: nil)
+            return
+        }
         #if DEBUG
-        guard ["www.youtube.com", "youtube.com", "www.youtube-nocookie.com"].contains(message.frameInfo.securityOrigin.host),
-              let text = message.body as? String, text.utf8.count < 2048 else { return }
-        diagnostics = text
+        if message.name == "kidsDiagnostics" { diagnostics = text }
         #endif
     }
 }

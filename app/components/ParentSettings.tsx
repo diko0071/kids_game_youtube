@@ -11,12 +11,16 @@ import {
   Volume2,
   VolumeX,
   X,
+  GalleryHorizontal,
+  LayoutGrid,
+  Rows2,
 } from "lucide-react";
 import {
   AppSettings,
   GAME_TYPES,
   GameType,
   INTERVAL_OPTIONS,
+  MENU_LAYOUTS,
 } from "@/app/lib/settings";
 
 interface ParentSettingsProps {
@@ -107,6 +111,19 @@ export default function ParentSettings({
 
         <div className="settings-body">
           <fieldset className="settings-section">
+            <legend>Как показывать мультики?</legend>
+            <div className="menu-layout-options" role="radiogroup" aria-label="Вариант меню">
+              {MENU_LAYOUTS.map(layout => {
+                const Icon = layout === "feed" ? Rows2 : layout === "carousel" ? GalleryHorizontal : LayoutGrid;
+                return <button type="button" role="radio" aria-checked={draft.menuLayout === layout} key={layout} onClick={() => setDraft(current => ({ ...current, menuLayout: layout }))} data-testid={`menu-layout-${layout}`}><Icon aria-hidden="true" /><strong>{layout === "feed" ? "Лента" : layout === "carousel" ? "Карусель" : "Плитки"}</strong><span>{layout === "feed" ? "Большие обложки" : layout === "carousel" ? "Листаем вбок" : "Больше на экране"}</span></button>;
+              })}
+            </div>
+          </fieldset>
+          <section className="settings-section">
+            <div className="setting-row learning-setting-row"><div className="setting-copy"><h3>Игровые паузы</h3><p>Пока можно просто смотреть. Задания включаются здесь.</p></div><button type="button" role="switch" className={`switch ${draft.learningEnabled ? "on" : ""}`} aria-label="Игровые паузы" aria-checked={draft.learningEnabled} onClick={() => setDraft(current => ({ ...current, learningEnabled: !current.learningEnabled }))}><span /></button></div>
+          </section>
+          {draft.learningEnabled && <>
+          <fieldset className="settings-section">
             <legend>Когда делать паузу на игру?</legend>
             <p>Таймер идёт только пока мультфильм действительно проигрывается.</p>
             <div className="interval-options" data-testid="interval-options">
@@ -187,6 +204,7 @@ export default function ParentSettings({
             </div>
             <p className="settings-validation" role="alert">{validationMessage}</p>
           </fieldset>
+          </>}
         </div>
 
         <footer className="settings-footer">
