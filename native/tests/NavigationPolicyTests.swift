@@ -6,22 +6,32 @@ struct NavigationPolicyTests {
         let catalog = try JSONDecoder().decode(ApprovedCatalog.self, from: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))
         let policy = NavigationPolicy(catalog: catalog)
         var checks = 0
-        for id in catalog.catalogIDs {
-            precondition(policy.allows(URL(string: "https://kids-game-youtube.vercel.app/?video=\(id)")!, mainFrame: true))
+        // Both production origins must behave identically, or the domain cutover silently breaks the installed build.
+        let hosts = ["mira-luke.vercel.app", "kids.dkravt.ai"]
+        precondition(Set(hosts) == NavigationPolicy.appHosts)
+        for host in hosts {
+            for id in catalog.catalogIDs {
+                precondition(policy.allows(URL(string: "https://\(host)/?video=\(id)")!, mainFrame: true), host)
+                checks += 1
+            }
+            precondition(policy.allows(URL(string: "https://\(host)/")!, mainFrame: true), host)
             checks += 1
         }
         for id in catalog.playbackIDs {
             precondition(policy.allows(URL(string: "https://www.youtube.com/embed/\(id)")!, mainFrame: false))
             checks += 1
         }
-        let blocked = [
-            "https://kids-game-youtube.vercel.app.evil.example/",
-            "https://kids-game-youtube.vercel.app@evil.example/",
-            "http://kids-game-youtube.vercel.app/",
-            "https://kids-game-youtube.vercel.app:444/",
-            "https://kids-game-youtube.vercel.app/?video=",
-            "https://kids-game-youtube.vercel.app/?video=arbitrary",
-            "https://kids-game-youtube.vercel.app/?video=\(catalog.catalogIDs[0])&video=arbitrary",
+        let blocked = hosts.flatMap { host in
+            [
+                "https://\(host).evil.example/",
+                "https://\(host)@evil.example/",
+                "http://\(host)/",
+                "https://\(host):444/",
+                "https://\(host)/?video=",
+                "https://\(host)/?video=arbitrary",
+                "https://\(host)/?video=\(catalog.catalogIDs[0])&video=arbitrary",
+            ]
+        } + [
             "https://www.youtube.com/watch?v=\(catalog.playbackIDs[0])",
             "https://www.youtube.com/embed/arbitrary",
             "https://www.youtube.com/channel/anything",
@@ -46,7 +56,8 @@ struct NavigationPolicyTests {
         precondition(dynamic.accept(batch)?.videos.count == 2)
         precondition(dynamic.recommendedIDs == Set([first.id, second.id]))
         precondition(dynamic.allows(URL(string: "https://www.youtube.com/embed/\(first.id)")!, mainFrame: false))
-        precondition(dynamic.allows(URL(string: "https://kids-game-youtube.vercel.app/?video=\(first.id)")!, mainFrame: true))
+        precondition(dynamic.allows(URL(string: "https://mira-luke.vercel.app/?video=\(first.id)")!, mainFrame: true))
+        precondition(dynamic.allows(URL(string: "https://kids.dkravt.ai/?video=\(first.id)")!, mainFrame: true))
         precondition(!dynamic.allows(URL(string: "https://www.youtube.com/embed/\(third.id)")!, mainFrame: false))
         dynamic.beginPlayback(first.id)
         precondition(dynamic.currentPlaybackID == first.id && dynamic.recommendedIDs.isEmpty)
@@ -62,11 +73,45 @@ struct NavigationPolicyTests {
         // A direct URL cannot reuse a recommendation grant from the previous video.
         dynamic.beginPlayback(catalog.playbackIDs[1])
         precondition(!dynamic.allows(URL(string: "https://www.youtube.com/embed/ZcZVtt-baas")!, mainFrame: false))
-        precondition(!dynamic.allows(URL(string: "https://kids-game-youtube.vercel.app/?video=ZcZVtt-baas")!, mainFrame: true))
+        precondition(!dynamic.allows(URL(string: "https://mira-luke.vercel.app/?video=ZcZVtt-baas")!, mainFrame: true))
+        precondition(!dynamic.allows(URL(string: "https://kids.dkravt.ai/?video=ZcZVtt-baas")!, mainFrame: true))
+        // A search grant makes our own search results playable without opening the allowlist to arbitrary IDs.
+        var searcher = NavigationPolicy(catalog: catalog)
+        let liveID = "kUyGqmnaFXQ"
+        precondition(!searcher.allows(URL(string: "https://mira-luke.vercel.app/?video=\(liveID)")!, mainFrame: true))
+        precondition(!searcher.allows(URL(string: "https://www.youtube.com/embed/\(liveID)")!, mainFrame: false))
+        precondition(searcher.acceptSearchResults([liveID, "badid", "", "toolongtobeavalidid", "second_vali"]) == Set([liveID, "second_vali"]))
+        precondition(searcher.allows(URL(string: "https://mira-luke.vercel.app/?video=\(liveID)")!, mainFrame: true))
+        precondition(searcher.allows(URL(string: "https://kids.dkravt.ai/?video=\(liveID)")!, mainFrame: true))
+        precondition(searcher.allows(URL(string: "https://www.youtube.com/embed/\(liveID)")!, mainFrame: false))
+        precondition(!searcher.allows(URL(string: "https://www.youtube.com/embed/neverGranted")!, mainFrame: false))
+        // Playing a granted result keeps it playable and still resets the previous embed's recommendations.
+        searcher.beginPlayback(liveID)
+        precondition(searcher.currentPlaybackID == liveID && searcher.recommendedIDs.isEmpty)
+        // A new search replaces the grant instead of accumulating, so the old page of results goes dead.
+        precondition(searcher.acceptSearchResults(["freshResult"]) == Set(["freshResult"]))
+        precondition(!searcher.allows(URL(string: "https://mira-luke.vercel.app/?video=second_vali")!, mainFrame: true))
+        precondition(searcher.allows(URL(string: "https://mira-luke.vercel.app/?video=freshResult")!, mainFrame: true))
+        // The grant never exceeds one result page.
+        precondition(searcher.acceptSearchResults((0..<40).map { String(format: "id%09d", $0) }).count == NavigationPolicy.searchGrantLimit)
+        // Catalog playback still works after any of this.
+        precondition(searcher.allows(URL(string: "https://mira-luke.vercel.app/?video=\(catalog.catalogIDs[0])")!, mainFrame: true))
+        checks += 14
         let preview = NavigationPolicy(catalog: catalog, appURL: URL(string: "http://127.0.0.1:3017/")!)
         precondition(preview.allows(URL(string: "http://127.0.0.1:3017/?menu=grid")!, mainFrame: true))
         precondition(!preview.allows(URL(string: "http://127.0.0.1:3018/")!, mainFrame: true))
         precondition(!policy.allows(URL(string: "http://127.0.0.1:3017/")!, mainFrame: true))
+        // The dual-origin grant belongs to a production appURL only; a preview host must not inherit it.
+        for host in hosts {
+            precondition(!preview.allows(URL(string: "https://\(host)/")!, mainFrame: true), host)
+            checks += 1
+        }
+        // Naming one production origin admits its sibling, so a domain cutover needs no reinstall.
+        let pinned = NavigationPolicy(catalog: catalog, appURL: URL(string: "https://kids.dkravt.ai/")!)
+        for host in hosts {
+            precondition(pinned.allows(URL(string: "https://\(host)/")!, mainFrame: true), host)
+            checks += 1
+        }
         let search = URL(string: "https://www.youtube.com/results?search_query=excavator")!
         precondition(policy.allowsExternalSearch(search, sourceURL: policy.appURL, mainFrame: true))
         precondition(!policy.allowsExternalSearch(search, sourceURL: policy.appURL, mainFrame: false))

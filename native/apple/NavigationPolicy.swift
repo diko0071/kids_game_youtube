@@ -17,14 +17,36 @@ struct NativeRecommendationBatch: Codable {
 }
 
 struct NavigationPolicy {
-    static let appHost = "kids-game-youtube.vercel.app"
+    // Session 23e476f9-ecb7-468a-9457-509cfc36dde6: the app serves from two equivalent origins while it migrates off the Vercel subdomain, so an installed build must accept both or a domain cutover strands every device until it is reinstalled.
+    static let appHosts: Set<String> = ["mira-luke.vercel.app", "kids.dkravt.ai"]
     let catalog: ApprovedCatalog
-    var appURL = URL(string: "https://kids-game-youtube.vercel.app/")!
+    var appURL = URL(string: "https://mira-luke.vercel.app/")!
     private(set) var currentPlaybackID: String?
     private(set) var recommendedIDs = Set<String>()
+    private(set) var searchGrantedIDs = Set<String>()
+    static let searchGrantLimit = 12
+
+    // A loopback preview stays isolated to its own origin; only a production appURL unlocks the sibling production host.
+    private var allowedMainFrameOrigins: [(scheme: String, host: String, port: Int)] {
+        if appURL.scheme == "https", let host = appURL.host, Self.appHosts.contains(host) {
+            return Self.appHosts.map { ("https", $0, 443) }
+        }
+        return [(appURL.scheme ?? "", appURL.host ?? "", appURL.port ?? 443)]
+    }
 
     private var playableIDs: Set<String> {
-        Set(catalog.playbackIDs).union(recommendedIDs).union(currentPlaybackID.map { [$0] } ?? [])
+        Set(catalog.playbackIDs).union(recommendedIDs).union(searchGrantedIDs).union(currentPlaybackID.map { [$0] } ?? [])
+    }
+
+    // Session 23e476f9-ecb7-468a-9457-509cfc36dde6: a search result is playable only because our own page just received it from our own search route and handed it over from the main frame. The grant replaces itself on every search and never grows past one result page, so a stale or accumulated ID cannot become a permanent hole in the allowlist.
+    mutating func acceptSearchResults(_ ids: [String]) -> Set<String> {
+        var granted = Set<String>()
+        for id in ids.prefix(Self.searchGrantLimit)
+        where id.range(of: "^[A-Za-z0-9_-]{11}$", options: .regularExpression) != nil {
+            granted.insert(id)
+        }
+        searchGrantedIDs = granted
+        return granted
     }
 
     mutating func beginPlayback(_ id: String) {
@@ -60,11 +82,13 @@ struct NavigationPolicy {
         if !mainFrame && url.absoluteString == "about:blank" { return true }
         guard url.user == nil, url.password == nil else { return false }
         if mainFrame {
-            guard url.scheme == appURL.scheme, url.host == appURL.host,
-                  (url.port ?? 443) == (appURL.port ?? 443), url.path == "/" || url.path.isEmpty else { return false }
+            let origins = allowedMainFrameOrigins
+            guard let scheme = url.scheme, let host = url.host,
+                  origins.contains(where: { $0.scheme == scheme && $0.host == host && $0.port == (url.port ?? 443) }),
+                  url.path == "/" || url.path.isEmpty else { return false }
             let values = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
                 .filter { $0.name == "video" } ?? []
-            let allowed = Set(catalog.catalogIDs).union(recommendedIDs).union(currentPlaybackID.map { [$0] } ?? [])
+            let allowed = Set(catalog.catalogIDs).union(recommendedIDs).union(searchGrantedIDs).union(currentPlaybackID.map { [$0] } ?? [])
             return values.isEmpty || (values.count == 1 && allowed.contains(values[0].value ?? ""))
         }
         guard url.scheme == "https", url.port == nil || url.port == 443 else { return false }
