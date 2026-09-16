@@ -89,6 +89,25 @@
 .kids-empty-search strong { color: var(--kids-ink); font-size: 19px; }
 .kids-empty-search span { margin-top: 5px; font-size: 13px; }
 .kids-empty-search button { margin-top: 16px; padding: 10px 15px; border: 0; border-radius: 14px; background: #f3e9ef; color: #783f58; font-weight: 800; cursor: pointer; }
+.kids-search-results { display: flex; flex: 1; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; flex-direction: column; gap: 14px; padding: 2px 3px 18px; scrollbar-width: thin; scrollbar-color: #d9ced6 transparent; }
+.kids-search-section { padding: 16px; border: 1px solid #e9e1e6; border-radius: 23px; background: rgba(255,255,255,.72); }
+.kids-youtube-section { border-color: #f2dadd; background: #fffafa; }
+.kids-search-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.kids-search-heading > div { min-width: 0; }
+.kids-search-heading span { display: block; color: #8b7f89; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.kids-search-heading h3 { display: flex; align-items: center; gap: 8px; margin: 3px 0 0; color: var(--kids-ink); font-size: 20px; line-height: 1.15; }
+.kids-search-heading h3 svg { width: 24px; height: 24px; color: #f00; fill: currentColor; }
+.kids-search-heading b { display: grid; min-width: 32px; height: 32px; place-items: center; border-radius: 50%; background: #f2ebef; color: #6f6371; font-size: 12px; }
+.kids-search-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px 16px; }
+.kids-search-note { margin: 0; padding: 18px; border: 1px dashed #ddd1d9; border-radius: 17px; color: #756a78; font-size: 13px; text-align: center; }
+.kids-youtube-status { display: flex; min-height: 92px; align-items: center; justify-content: center; gap: 10px; border: 1px dashed #e5d5da; border-radius: 17px; color: #675c68; }
+.kids-youtube-status svg { width: 23px; height: 23px; color: #f0445f; }
+.kids-youtube-error { flex-direction: column; gap: 4px; padding: 16px; color: #7f3441; text-align: center; }
+.kids-youtube-error span { color: #8a7880; font-size: 12px; }
+.kids-youtube-badge { position: absolute; top: 9px; left: 9px; display: inline-flex; align-items: center; gap: 4px; padding: 5px 7px; border-radius: 8px; background: rgba(255,255,255,.95); color: #d80000; font-size: 10px; font-weight: 850; box-shadow: 0 2px 8px rgba(35,20,25,.12); }
+.kids-youtube-badge svg { width: 14px; height: 14px; fill: currentColor; }
+.kids-youtube-legal { margin: 14px 2px 0; color: #8a7d84; font-size: 10px; text-align: right; }
+.kids-youtube-legal a { color: #665b66; text-decoration: underline; text-underline-offset: 2px; }
 .kids-filter-overlay { position: fixed; z-index: 1200; display: grid; place-items: center; inset: 0; padding: 18px; background: rgba(34,27,43,.58); backdrop-filter: blur(7px); }
 .kids-filter-sheet { display: flex; overflow: hidden; width: min(680px,100%); max-height: min(760px,calc(100dvh - 36px)); flex-direction: column; border-radius: 28px; background: var(--kids-paper); box-shadow: 0 24px 80px rgba(30,20,35,.28); }
 .kids-filter-sheet header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 24px 16px; border-bottom: 1px solid #eadfe5; }
@@ -149,6 +168,11 @@
   .kids-catalog.layout-grid .kids-card-copy strong { font-size: 13px; }
   .kids-catalog.layout-grid .kids-thumbnail { border-radius: 13px; }
   .kids-catalog.layout-carousel .kids-video-card { flex-basis: 91%; }
+  .kids-search-section { padding: 13px; border-radius: 19px; }
+  .kids-search-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px 10px; }
+  .kids-search-grid .kids-card-copy strong { font-size: 13px; }
+  .kids-search-grid .kids-thumbnail { border-radius: 13px; }
+  .kids-youtube-legal { text-align: left; line-height: 1.45; }
   .kids-catalog-compact .kids-categories { padding-bottom: 7px; }
   .kids-catalog-compact .kids-categories button { min-height: 50px; flex-direction: row; gap: 6px; min-width: auto; padding: 8px 12px; }
   .kids-catalog-compact .kids-categories svg { width: 20px; height: 20px; }
@@ -192,6 +216,13 @@
   .kids-card-copy > span { display: none; }
   .kids-thumbnail { border-radius: 13px; }
   .kids-catalog.layout-grid .kids-card-list { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
+  .kids-search-results { flex-direction: row; gap: 10px; }
+  .kids-search-section { min-width: min(72vw,620px); padding: 10px; border-radius: 16px; }
+  .kids-search-heading { margin-bottom: 8px; }
+  .kids-search-heading h3 { font-size: 15px; }
+  .kids-search-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+  .kids-search-grid .kids-card-copy strong { font-size: 12px; }
+  .kids-youtube-legal { display: none; }
   .kids-catalog-compact .kids-categories button { min-width: auto; }
   .kids-catalog-compact.layout-feed .kids-card-list { display: grid; grid-template-columns: 1fr; overflow-y: auto; }
   .kids-catalog-compact.layout-grid .kids-card-list { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }

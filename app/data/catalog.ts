@@ -20,6 +20,7 @@ export interface CartoonVideo {
   topicId: TopicId;
   durationLabel?: string;
   searchTerms?: string[];
+  source?: "youtube-search";
 }
 
 export const TOPICS: CartoonTopic[] = [

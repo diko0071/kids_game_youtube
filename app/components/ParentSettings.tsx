@@ -5,7 +5,6 @@ import {
   BookOpen,
   Check,
   CircleDot,
-  ExternalLink,
   Hash,
   Palette,
   Play,
@@ -15,9 +14,7 @@ import {
   GalleryHorizontal,
   LayoutGrid,
   Rows2,
-  Search,
 } from "lucide-react";
-import { buildYouTubeSearchUrl } from "@/app/lib/catalog-search";
 import {
   AppSettings,
   GAME_TYPES,
@@ -56,7 +53,6 @@ export default function ParentSettings({
 }: ParentSettingsProps) {
   const [draft, setDraft] = useState(settings);
   const [validationMessage, setValidationMessage] = useState("");
-  const [youtubeQuery, setYouTubeQuery] = useState("");
   const titleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -98,12 +94,6 @@ export default function ParentSettings({
     onClose();
   };
 
-  const searchYouTube = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const url = buildYouTubeSearchUrl(youtubeQuery);
-    if (url) window.open(url, "_blank", "noopener,noreferrer");
-  };
-
   return (
     <div className="modal-overlay" role="presentation" onMouseDown={(event) => {
       if (event.currentTarget === event.target) onClose();
@@ -129,14 +119,6 @@ export default function ParentSettings({
               })}
             </div>
           </fieldset>
-          <section className="settings-section youtube-search-setting" aria-labelledby="youtube-search-title">
-            <h3 id="youtube-search-title">Поиск на YouTube</h3>
-            <p>Поиск откроется отдельно, в YouTube или браузере. Там будет обычный YouTube без ограничений нашего каталога.</p>
-            <form onSubmit={searchYouTube}>
-              <label><Search aria-hidden="true" /><span className="sr-only">Что найти на YouTube</span><input type="search" maxLength={200} value={youtubeQuery} onChange={(event) => setYouTubeQuery(event.target.value)} placeholder="Например, машинки и экскаваторы" autoComplete="off" data-testid="youtube-search-input" /></label>
-              <button type="submit" disabled={!youtubeQuery.trim()} data-testid="youtube-search-submit">Искать <ExternalLink aria-hidden="true" /></button>
-            </form>
-          </section>
           <section className="settings-section">
             <div className="setting-row learning-setting-row"><div className="setting-copy"><h3>Игровые паузы</h3><p>Пока можно просто смотреть. Задания включаются здесь.</p></div><button type="button" role="switch" className={`switch ${draft.learningEnabled ? "on" : ""}`} aria-label="Игровые паузы" aria-checked={draft.learningEnabled} onClick={() => setDraft(current => ({ ...current, learningEnabled: !current.learningEnabled }))}><span /></button></div>
           </section>
