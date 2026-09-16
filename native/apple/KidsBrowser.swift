@@ -37,6 +37,7 @@ final class KidsBrowserModel: NSObject, ObservableObject, WKNavigationDelegate, 
             let controller = WKUserContentController()
             controller.addUserScript(WKUserScript(source: try String(contentsOf: scriptURL, encoding: .utf8), injectionTime: .atDocumentStart, forMainFrameOnly: false))
             controller.add(WeakDiagnosticsHandler(self), name: "kidsRecommendations")
+            controller.add(WeakDiagnosticsHandler(self), name: "kidsSearchResults")
             #if DEBUG
             controller.add(WeakDiagnosticsHandler(self), name: "kidsDiagnostics")
             #endif
@@ -122,6 +123,17 @@ final class KidsBrowserModel: NSObject, ObservableObject, WKNavigationDelegate, 
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        // Search grants come from our own page, so they take the opposite frame check from the embed bridge below: main frame, our own origin, never a YouTube subframe.
+        if message.name == "kidsSearchResults" {
+            guard message.frameInfo.isMainFrame,
+                  message.frameInfo.securityOrigin.protocol == "https",
+                  NavigationPolicy.appHosts.contains(message.frameInfo.securityOrigin.host),
+                  let text = message.body as? String, text.utf8.count < 8192,
+                  let data = text.data(using: .utf8),
+                  let ids = try? JSONDecoder().decode([String].self, from: data) else { return }
+            _ = policy.acceptSearchResults(ids)
+            return
+        }
         guard !message.frameInfo.isMainFrame,
               ["www.youtube.com", "youtube.com", "www.youtube-nocookie.com"].contains(message.frameInfo.securityOrigin.host),
               let frameURL = message.frameInfo.request.url, frameURL.path == "/embed/\(policy.currentPlaybackID ?? "")",

@@ -7,6 +7,7 @@ import { filterCatalog } from "../lib/catalog-search";
 import { MenuLayout } from "../lib/settings";
 import { buildForYou } from "../lib/recommendations";
 import { YouTubeSearchResult } from "../lib/youtube-search";
+import { notifyNativeSearchResults } from "../lib/native-search-bridge";
 
 const ICONS = { stories: Tv, learning: Sparkles, vehicles: Truck, songs: Music2, adventures: Rocket };
 
@@ -77,8 +78,11 @@ export default function KidsCatalog({ currentVideo, recommendations, layout, ini
         const response = await fetch(`/api/youtube-search?q=${encodeURIComponent(normalizedQuery)}`, { signal: controller.signal });
         const payload = await response.json() as { items?: YouTubeSearchResult[]; error?: string };
         if (!response.ok) throw new Error(payload.error || "YouTube сейчас не ответил.");
-        setYouTubeResults(Array.isArray(payload.items) ? payload.items : []);
+        const items = Array.isArray(payload.items) ? payload.items : [];
+        setYouTubeResults(items);
         setYouTubeStatus("ready");
+        // The native allowlist is closed over the catalog, so a search result stays unplayable in the app until this page vouches for it. Only IDs this route just returned are handed over.
+        notifyNativeSearchResults(items.map((item) => item.id));
       } catch (error) {
         if (controller.signal.aborted) return;
         setYouTubeStatus("error");

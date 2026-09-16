@@ -75,6 +75,28 @@ struct NavigationPolicyTests {
         precondition(!dynamic.allows(URL(string: "https://www.youtube.com/embed/ZcZVtt-baas")!, mainFrame: false))
         precondition(!dynamic.allows(URL(string: "https://mira-luke.vercel.app/?video=ZcZVtt-baas")!, mainFrame: true))
         precondition(!dynamic.allows(URL(string: "https://kids.dkravt.ai/?video=ZcZVtt-baas")!, mainFrame: true))
+        // A search grant makes our own search results playable without opening the allowlist to arbitrary IDs.
+        var searcher = NavigationPolicy(catalog: catalog)
+        let liveID = "kUyGqmnaFXQ"
+        precondition(!searcher.allows(URL(string: "https://mira-luke.vercel.app/?video=\(liveID)")!, mainFrame: true))
+        precondition(!searcher.allows(URL(string: "https://www.youtube.com/embed/\(liveID)")!, mainFrame: false))
+        precondition(searcher.acceptSearchResults([liveID, "badid", "", "toolongtobeavalidid", "second_vali"]) == Set([liveID, "second_vali"]))
+        precondition(searcher.allows(URL(string: "https://mira-luke.vercel.app/?video=\(liveID)")!, mainFrame: true))
+        precondition(searcher.allows(URL(string: "https://kids.dkravt.ai/?video=\(liveID)")!, mainFrame: true))
+        precondition(searcher.allows(URL(string: "https://www.youtube.com/embed/\(liveID)")!, mainFrame: false))
+        precondition(!searcher.allows(URL(string: "https://www.youtube.com/embed/neverGranted")!, mainFrame: false))
+        // Playing a granted result keeps it playable and still resets the previous embed's recommendations.
+        searcher.beginPlayback(liveID)
+        precondition(searcher.currentPlaybackID == liveID && searcher.recommendedIDs.isEmpty)
+        // A new search replaces the grant instead of accumulating, so the old page of results goes dead.
+        precondition(searcher.acceptSearchResults(["freshResult"]) == Set(["freshResult"]))
+        precondition(!searcher.allows(URL(string: "https://mira-luke.vercel.app/?video=second_vali")!, mainFrame: true))
+        precondition(searcher.allows(URL(string: "https://mira-luke.vercel.app/?video=freshResult")!, mainFrame: true))
+        // The grant never exceeds one result page.
+        precondition(searcher.acceptSearchResults((0..<40).map { String(format: "id%09d", $0) }).count == NavigationPolicy.searchGrantLimit)
+        // Catalog playback still works after any of this.
+        precondition(searcher.allows(URL(string: "https://mira-luke.vercel.app/?video=\(catalog.catalogIDs[0])")!, mainFrame: true))
+        checks += 14
         let preview = NavigationPolicy(catalog: catalog, appURL: URL(string: "http://127.0.0.1:3017/")!)
         precondition(preview.allows(URL(string: "http://127.0.0.1:3017/?menu=grid")!, mainFrame: true))
         precondition(!preview.allows(URL(string: "http://127.0.0.1:3018/")!, mainFrame: true))
