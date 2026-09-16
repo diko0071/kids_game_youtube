@@ -148,7 +148,8 @@ export default function KidsTubeApp() {
     else playerRef.current?.playVideo();
     const params = new URLSearchParams({ theme: video.topicId, video: video.id });
     if (isMenuLayout(previewLayout)) params.set("menu", previewLayout);
-    router.push(`/?${params.toString()}`, { scroll: false });
+    // Native history keeps the client component alive, so the explicit search-result grant is not lost while Next.js syncs useSearchParams with the new URL.
+    window.history.pushState(null, "", `/?${params.toString()}`);
   };
 
   return (
