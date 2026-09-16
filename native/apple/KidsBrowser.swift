@@ -18,7 +18,7 @@ final class KidsBrowserModel: NSObject, ObservableObject, WKNavigationDelegate, 
     @Published var blockedNavigations = 0
     private(set) var webView: WKWebView!
     private var policy: NavigationPolicy!
-    private var appURL = URL(string: "https://kids.dkravt.ai/")!
+    private var appURL = URL(string: "https://mira-luke.vercel.app/")!
 
     override init() {
         super.init()

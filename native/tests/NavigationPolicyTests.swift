@@ -6,22 +6,32 @@ struct NavigationPolicyTests {
         let catalog = try JSONDecoder().decode(ApprovedCatalog.self, from: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))
         let policy = NavigationPolicy(catalog: catalog)
         var checks = 0
-        for id in catalog.catalogIDs {
-            precondition(policy.allows(URL(string: "https://kids.dkravt.ai/?video=\(id)")!, mainFrame: true))
+        // Both production origins must behave identically, or the domain cutover silently breaks the installed build.
+        let hosts = ["mira-luke.vercel.app", "kids.dkravt.ai"]
+        precondition(Set(hosts) == NavigationPolicy.appHosts)
+        for host in hosts {
+            for id in catalog.catalogIDs {
+                precondition(policy.allows(URL(string: "https://\(host)/?video=\(id)")!, mainFrame: true), host)
+                checks += 1
+            }
+            precondition(policy.allows(URL(string: "https://\(host)/")!, mainFrame: true), host)
             checks += 1
         }
         for id in catalog.playbackIDs {
             precondition(policy.allows(URL(string: "https://www.youtube.com/embed/\(id)")!, mainFrame: false))
             checks += 1
         }
-        let blocked = [
-            "https://kids.dkravt.ai.evil.example/",
-            "https://kids.dkravt.ai@evil.example/",
-            "http://kids.dkravt.ai/",
-            "https://kids.dkravt.ai:444/",
-            "https://kids.dkravt.ai/?video=",
-            "https://kids.dkravt.ai/?video=arbitrary",
-            "https://kids.dkravt.ai/?video=\(catalog.catalogIDs[0])&video=arbitrary",
+        let blocked = hosts.flatMap { host in
+            [
+                "https://\(host).evil.example/",
+                "https://\(host)@evil.example/",
+                "http://\(host)/",
+                "https://\(host):444/",
+                "https://\(host)/?video=",
+                "https://\(host)/?video=arbitrary",
+                "https://\(host)/?video=\(catalog.catalogIDs[0])&video=arbitrary",
+            ]
+        } + [
             "https://www.youtube.com/watch?v=\(catalog.playbackIDs[0])",
             "https://www.youtube.com/embed/arbitrary",
             "https://www.youtube.com/channel/anything",
@@ -46,6 +56,7 @@ struct NavigationPolicyTests {
         precondition(dynamic.accept(batch)?.videos.count == 2)
         precondition(dynamic.recommendedIDs == Set([first.id, second.id]))
         precondition(dynamic.allows(URL(string: "https://www.youtube.com/embed/\(first.id)")!, mainFrame: false))
+        precondition(dynamic.allows(URL(string: "https://mira-luke.vercel.app/?video=\(first.id)")!, mainFrame: true))
         precondition(dynamic.allows(URL(string: "https://kids.dkravt.ai/?video=\(first.id)")!, mainFrame: true))
         precondition(!dynamic.allows(URL(string: "https://www.youtube.com/embed/\(third.id)")!, mainFrame: false))
         dynamic.beginPlayback(first.id)
@@ -62,11 +73,23 @@ struct NavigationPolicyTests {
         // A direct URL cannot reuse a recommendation grant from the previous video.
         dynamic.beginPlayback(catalog.playbackIDs[1])
         precondition(!dynamic.allows(URL(string: "https://www.youtube.com/embed/ZcZVtt-baas")!, mainFrame: false))
+        precondition(!dynamic.allows(URL(string: "https://mira-luke.vercel.app/?video=ZcZVtt-baas")!, mainFrame: true))
         precondition(!dynamic.allows(URL(string: "https://kids.dkravt.ai/?video=ZcZVtt-baas")!, mainFrame: true))
         let preview = NavigationPolicy(catalog: catalog, appURL: URL(string: "http://127.0.0.1:3017/")!)
         precondition(preview.allows(URL(string: "http://127.0.0.1:3017/?menu=grid")!, mainFrame: true))
         precondition(!preview.allows(URL(string: "http://127.0.0.1:3018/")!, mainFrame: true))
         precondition(!policy.allows(URL(string: "http://127.0.0.1:3017/")!, mainFrame: true))
+        // The dual-origin grant belongs to a production appURL only; a preview host must not inherit it.
+        for host in hosts {
+            precondition(!preview.allows(URL(string: "https://\(host)/")!, mainFrame: true), host)
+            checks += 1
+        }
+        // Naming one production origin admits its sibling, so a domain cutover needs no reinstall.
+        let pinned = NavigationPolicy(catalog: catalog, appURL: URL(string: "https://kids.dkravt.ai/")!)
+        for host in hosts {
+            precondition(pinned.allows(URL(string: "https://\(host)/")!, mainFrame: true), host)
+            checks += 1
+        }
         let search = URL(string: "https://www.youtube.com/results?search_query=excavator")!
         precondition(policy.allowsExternalSearch(search, sourceURL: policy.appURL, mainFrame: true))
         precondition(!policy.allowsExternalSearch(search, sourceURL: policy.appURL, mainFrame: false))
