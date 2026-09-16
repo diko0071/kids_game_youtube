@@ -168,7 +168,8 @@ export default function YouTubePlayer({
             start: Math.floor(position),
             controls: 1,
             enablejsapi: 1,
-            fs: 1,
+            // Session 0aa8acbc-3477-4317-9e99-5ad65c8c70e3: YouTube's own fullscreen escapes our landscape CSS and restores the "Watch on YouTube" chrome, so the exit reappears. The supported player parameter removes the control outright, which the browser build cannot achieve by hiding DOM inside a cross-origin frame.
+            fs: 0,
             iv_load_policy: 3,
             playsinline: 1,
             rel: 0,
