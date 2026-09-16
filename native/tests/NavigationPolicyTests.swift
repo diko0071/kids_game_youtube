@@ -7,7 +7,7 @@ struct NavigationPolicyTests {
         let policy = NavigationPolicy(catalog: catalog)
         var checks = 0
         for id in catalog.catalogIDs {
-            precondition(policy.allows(URL(string: "https://kids-game-youtube.vercel.app/?video=\(id)")!, mainFrame: true))
+            precondition(policy.allows(URL(string: "https://kids.dkravt.ai/?video=\(id)")!, mainFrame: true))
             checks += 1
         }
         for id in catalog.playbackIDs {
@@ -15,13 +15,13 @@ struct NavigationPolicyTests {
             checks += 1
         }
         let blocked = [
-            "https://kids-game-youtube.vercel.app.evil.example/",
-            "https://kids-game-youtube.vercel.app@evil.example/",
-            "http://kids-game-youtube.vercel.app/",
-            "https://kids-game-youtube.vercel.app:444/",
-            "https://kids-game-youtube.vercel.app/?video=",
-            "https://kids-game-youtube.vercel.app/?video=arbitrary",
-            "https://kids-game-youtube.vercel.app/?video=\(catalog.catalogIDs[0])&video=arbitrary",
+            "https://kids.dkravt.ai.evil.example/",
+            "https://kids.dkravt.ai@evil.example/",
+            "http://kids.dkravt.ai/",
+            "https://kids.dkravt.ai:444/",
+            "https://kids.dkravt.ai/?video=",
+            "https://kids.dkravt.ai/?video=arbitrary",
+            "https://kids.dkravt.ai/?video=\(catalog.catalogIDs[0])&video=arbitrary",
             "https://www.youtube.com/watch?v=\(catalog.playbackIDs[0])",
             "https://www.youtube.com/embed/arbitrary",
             "https://www.youtube.com/channel/anything",
@@ -46,7 +46,7 @@ struct NavigationPolicyTests {
         precondition(dynamic.accept(batch)?.videos.count == 2)
         precondition(dynamic.recommendedIDs == Set([first.id, second.id]))
         precondition(dynamic.allows(URL(string: "https://www.youtube.com/embed/\(first.id)")!, mainFrame: false))
-        precondition(dynamic.allows(URL(string: "https://kids-game-youtube.vercel.app/?video=\(first.id)")!, mainFrame: true))
+        precondition(dynamic.allows(URL(string: "https://kids.dkravt.ai/?video=\(first.id)")!, mainFrame: true))
         precondition(!dynamic.allows(URL(string: "https://www.youtube.com/embed/\(third.id)")!, mainFrame: false))
         dynamic.beginPlayback(first.id)
         precondition(dynamic.currentPlaybackID == first.id && dynamic.recommendedIDs.isEmpty)
@@ -62,7 +62,7 @@ struct NavigationPolicyTests {
         // A direct URL cannot reuse a recommendation grant from the previous video.
         dynamic.beginPlayback(catalog.playbackIDs[1])
         precondition(!dynamic.allows(URL(string: "https://www.youtube.com/embed/ZcZVtt-baas")!, mainFrame: false))
-        precondition(!dynamic.allows(URL(string: "https://kids-game-youtube.vercel.app/?video=ZcZVtt-baas")!, mainFrame: true))
+        precondition(!dynamic.allows(URL(string: "https://kids.dkravt.ai/?video=ZcZVtt-baas")!, mainFrame: true))
         let preview = NavigationPolicy(catalog: catalog, appURL: URL(string: "http://127.0.0.1:3017/")!)
         precondition(preview.allows(URL(string: "http://127.0.0.1:3017/?menu=grid")!, mainFrame: true))
         precondition(!preview.allows(URL(string: "http://127.0.0.1:3018/")!, mainFrame: true))

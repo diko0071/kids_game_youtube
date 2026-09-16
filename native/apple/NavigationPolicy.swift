@@ -17,9 +17,9 @@ struct NativeRecommendationBatch: Codable {
 }
 
 struct NavigationPolicy {
-    static let appHost = "kids-game-youtube.vercel.app"
+    static let appHost = "kids.dkravt.ai"
     let catalog: ApprovedCatalog
-    var appURL = URL(string: "https://kids-game-youtube.vercel.app/")!
+    var appURL = URL(string: "https://kids.dkravt.ai/")!
     private(set) var currentPlaybackID: String?
     private(set) var recommendedIDs = Set<String>()
 
