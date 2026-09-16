@@ -29,9 +29,9 @@ export default function KidsTubeApp() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedVideoId = searchParams.get("video");
-  const [selectedRecommendation, setSelectedRecommendation] = useState<CartoonVideo | null>(null);
-  const knownVideo = getVideo(requestedVideoId) ?? (selectedRecommendation?.id === requestedVideoId ? selectedRecommendation : undefined);
-  // Session 01a09d4d-67ed-7d10-aa87-a5bd1f1c0c17: a URL alone grants no playback; extra IDs enter only through a selected native recommendation.
+  const [selectedSessionVideo, setSelectedSessionVideo] = useState<CartoonVideo | null>(null);
+  const knownVideo = getVideo(requestedVideoId) ?? (selectedSessionVideo?.id === requestedVideoId ? selectedSessionVideo : undefined);
+  // Session 01a0a68f-0546-74c1-bbfb-1c38a4ee07b4: a URL alone grants no playback; extra IDs enter only through an explicit search or native recommendation selection in this session.
   const blockedVideo = requestedVideoId !== null && !knownVideo;
   const currentVideo = knownVideo ?? VIDEOS[0];
   const recommendations = useNativeRecommendations(currentVideo);
@@ -141,8 +141,9 @@ export default function KidsTubeApp() {
   };
 
   const openVideo = (video: CartoonVideo) => {
-    if (!getVideo(video.id) && !recommendations.some(item => item.id === video.id) && selectedRecommendation?.id !== video.id) return;
-    if (!getVideo(video.id)) setSelectedRecommendation(video);
+    const allowedSessionSelection = video.source === "youtube-search" || recommendations.some(item => item.id === video.id) || selectedSessionVideo?.id === video.id;
+    if (!getVideo(video.id) && !allowedSessionSelection) return;
+    if (!getVideo(video.id)) setSelectedSessionVideo(video);
     if (requestedVideoId === null || blockedVideo || video.id !== currentVideo.id) setAutoplayVideoId(video.id);
     else playerRef.current?.playVideo();
     const params = new URLSearchParams({ theme: video.topicId, video: video.id });

@@ -20,11 +20,3 @@ export function filterCatalog(videos: CartoonVideo[], query: string): CartoonVid
     return terms.every((term) => index.includes(term));
   });
 }
-
-export function buildYouTubeSearchUrl(query: string): string | null {
-  const safeQuery = query.replace(/\s+/g, " ").trim();
-  if (!safeQuery) return null;
-  const url = new URL("https://www.youtube.com/results");
-  url.searchParams.set("search_query", safeQuery);
-  return url.toString();
-}
