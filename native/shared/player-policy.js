@@ -10,11 +10,14 @@
     '.ytFullscreenVideoRecommendationsHost',
     '.ytp-pause-overlay', '.ytp-endscreen-content', '.ytp-suggestion-set',
     '.ytp-ce-element', '.ytp-cards-teaser', '.ytp-next-button',
+    'a.media-item-thumbnail-container[href*="feature=endscreen"]',
   ];
   const exits = [
     '.ytp-youtube-button', '.ytp-title-link', '.ytp-title-channel',
     '.ytp-watch-later-button', '.ytp-share-button',
     '.ytp-fullscreen-button', '.ytwPlayerBottomControlsFullscreenButtonWrapper',
+    'a.ytmVideoInfoVideoTitle', 'a.ytmVideoInfoChannelTitle',
+    '.watch-on-youtube-button',
   ];
   const style = document.createElement('style');
   style.id = 'kids-native-player-policy';
@@ -77,11 +80,15 @@
     const report = () => {
       const matches = [...document.querySelectorAll(recommendations.join(','))];
       const visible = matches.filter(node => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden');
+      const exitMatches = [...document.querySelectorAll(exits.join(','))];
+      const visibleExits = exitMatches.filter(node => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden');
       const video = document.querySelector('video');
       reporter.postMessage(JSON.stringify({
         policy: Boolean(style.isConnected),
         recommendationsFound: matches.length,
         recommendationsVisible: visible.length,
+        exitsFound: exitMatches.length,
+        exitsVisible: visibleExits.length,
         paused: video?.paused ?? true,
         seconds: Math.floor(video?.currentTime ?? 0),
       }));
